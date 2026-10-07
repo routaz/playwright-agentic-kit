@@ -18,8 +18,9 @@ with a human reviewing each step. They use the Playwright MCP server from `.mcp.
 4. **Review:** run `npm run check && npm test` and review the diff like any pull request.
 5. **Heal** when tests go red: "Use the e2e-healer agent on the failing tests." It fixes only
    failures where the test is wrong, and reports app bugs and context drift without touching them.
-   In CI this happens automatically (`.github/workflows/heal.yml`), and `node kit/heal/run-guard.ts`
-   checks the healer's diff before anything is published. Run the guard locally after a heal too.
+   `npm run heal` does this headlessly with your own Claude login and guards the result
+   with `kit/heal/guard.ts`. CI can do the same when `HEAL_IN_CI` is enabled
+   (`.github/workflows/heal.yml`). After healing interactively, run `node kit/heal/run-guard.ts`.
 
 ## Ground rules (all agents, and you)
 

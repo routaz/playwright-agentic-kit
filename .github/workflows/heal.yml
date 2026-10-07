@@ -4,10 +4,14 @@ name: Heal
 # goes through kit/heal/guard.ts before a pull request is opened, and real app
 # bugs become issues instead of edits.
 #
-# Needs one of these repository secrets:
-#   CLAUDE_CODE_OAUTH_TOKEN  from `claude setup-token` (uses a Claude subscription)
-#   ANTHROPIC_API_KEY        from the Anthropic Console (pay per use)
-# and Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests".
+# OFF by default. Developers normally heal on their own machine with `npm run heal`
+# and their own Claude login. To heal in CI as well:
+#   1. Add a repository secret: CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`)
+#      or ANTHROPIC_API_KEY.
+#   2. Add a repository variable HEAL_IN_CI = true (Settings → Secrets and variables
+#      → Actions → Variables). Delete it or set it to false to switch CI healing off.
+#   3. Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests".
+# Manual runs (Actions → Heal → Run workflow) work whenever the secret exists.
 
 on:
   workflow_run:
@@ -35,7 +39,8 @@ jobs:
     # Only failed runs from this repository, and never a heal branch (no loops).
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'failure' &&
+      (vars.HEAL_IN_CI == 'true' &&
+       github.event.workflow_run.conclusion == 'failure' &&
        github.event.workflow_run.head_repository.full_name == github.repository &&
        !startsWith(github.event.workflow_run.head_branch, 'heal/'))
     runs-on: ubuntu-latest

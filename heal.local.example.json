@@ -1,0 +1,7 @@
+{
+  "claudePath": "claude",
+  "model": "",
+  "maxTurns": 40,
+  "afterHeal": "leave",
+  "reportIssues": false
+}

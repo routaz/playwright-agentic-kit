@@ -13,3 +13,6 @@ blob-report/
 
 # Heal workflow scratch (report, guard result)
 .heal/
+
+# Per-developer heal settings (see heal.local.example.json)
+heal.local.json

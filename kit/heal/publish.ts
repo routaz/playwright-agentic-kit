@@ -6,15 +6,8 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
-import {
-  issueTitle,
-  parseReport,
-  renderIssue,
-  renderPullRequest,
-  summariseRun,
-  type GuardSummary,
-  type RunSummary,
-} from './report.ts';
+import { gh, reportIssues } from './github.ts';
+import { parseReport, renderPullRequest, summariseRun, type GuardSummary, type RunSummary } from './report.ts';
 
 const { values: args } = parseArgs({
   options: {
@@ -33,14 +26,9 @@ const runId = args['run-id'] ?? String(Date.now());
 
 const readJson = (p: string) => JSON.parse(readFileSync(p, 'utf8'));
 
-function sh(cmd: string, ...rest: string[]): string {
-  if (dry && cmd !== 'git') {
-    console.log(
-      `[dry-run] ${cmd} ${rest.map((a) => (a.includes(' ') ? JSON.stringify(a.slice(0, 60)) : a)).join(' ')}`,
-    );
-    return '';
-  }
-  return execFileSync(cmd, rest, { encoding: 'utf8' });
+function git(...args: string[]) {
+  if (dry) console.log(`[dry-run] git ${args.join(' ')}`);
+  else execFileSync('git', args, { encoding: 'utf8' });
 }
 
 function summary(md: string) {
@@ -66,16 +54,12 @@ const changed = guard.files.length > 0 && report.healed.length > 0;
 if (changed) {
   const branch = `heal/${runId}`;
   const title = `Heal ${report.healed.length} failing E2E test${report.healed.length === 1 ? '' : 's'} on ${base}`;
-  if (dry) {
-    console.log(`[dry-run] would push ${branch} with: ${guard.files.join(', ')}`);
-  } else {
-    sh('git', 'switch', '-c', branch);
-    sh('git', 'add', '--', ...guard.files);
-    sh('git', 'commit', '-m', `${title}\n\nRepairs proposed by the e2e-healer agent for ${failedRunUrl}`);
-    sh('git', 'push', 'origin', branch);
-  }
-  prUrl = sh(
-    'gh',
+  git('switch', '-c', branch);
+  git('add', '--', ...guard.files);
+  git('commit', '-m', `${title}\n\nRepairs proposed by the e2e-healer agent for ${failedRunUrl}`);
+  git('push', 'origin', branch);
+  prUrl = gh(
+    dry,
     'pr',
     'create',
     '--base',
@@ -91,67 +75,8 @@ if (changed) {
 }
 
 // 2. One issue per real problem the healer refused to paper over.
-const issues: string[] = [];
 const toReport = report.escalated.filter((e) => e.class !== 'environment');
-if (toReport.length) {
-  sh(
-    'gh',
-    'label',
-    'create',
-    'e2e:app-bug',
-    '--color',
-    'B60205',
-    '--force',
-    '--description',
-    'Found by the E2E healer',
-  );
-  sh(
-    'gh',
-    'label',
-    'create',
-    'e2e:context-drift',
-    '--color',
-    'FBCA04',
-    '--force',
-    '--description',
-    'Context file looks stale',
-  );
-}
-for (const e of toReport) {
-  const title = issueTitle(e);
-  const existing = dry
-    ? ''
-    : sh(
-        'gh',
-        'issue',
-        'list',
-        '--state',
-        'open',
-        '--search',
-        `"${title}" in:title`,
-        '--json',
-        'url',
-        '--jq',
-        '.[0].url',
-      ).trim();
-  if (existing) {
-    issues.push(`${title} (already open: ${existing})`);
-    continue;
-  }
-  const url = sh(
-    'gh',
-    'issue',
-    'create',
-    '--title',
-    title,
-    '--label',
-    `e2e:${e.class}`,
-    '--body',
-    renderIssue(e, opts),
-  ).trim();
-  issues.push(url ? `${title}: ${url}` : title);
-  if (dry) console.log('\n' + renderIssue(e, opts) + '\n');
-}
+const issues = reportIssues(report, { ...opts, dry });
 
 // 3. Job summary.
 summary(
