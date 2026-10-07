@@ -25,6 +25,8 @@ export interface KitAdapter<TUser, TData> {
   signIn(context: BrowserContext, user: TUser, ctx: AdapterContext): Promise<void>;
   /** Remove what `createUser` made. Runs after each test, pass or fail. */
   deleteUser?(user: TUser, ctx: AdapterContext): Promise<void>;
+  /** Clean up whatever the `data` helpers created during the test. Runs after each test, pass or fail. */
+  disposeData?(data: TData, ctx: AdapterContext): Promise<void>;
 }
 
 export function defineAdapter<TUser, TData>(adapter: KitAdapter<TUser, TData>): KitAdapter<TUser, TData> {

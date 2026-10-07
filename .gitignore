@@ -16,3 +16,6 @@ blob-report/
 
 # Per-developer heal settings (see heal.local.example.json)
 heal.local.json
+
+# Personal Claude Code settings and permission approvals
+.claude/settings.local.json

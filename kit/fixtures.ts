@@ -36,7 +36,9 @@ export function createKitTest<TUser, TData>(adapter: KitAdapter<TUser, TData>) {
     },
 
     data: async ({ adapterCtx }, use) => {
-      await use(await adapter.data(adapterCtx));
+      const data = await adapter.data(adapterCtx);
+      await use(data);
+      await adapter.disposeData?.(data, adapterCtx);
     },
 
     createdUsers: async ({ adapterCtx }, use) => {
