@@ -45,6 +45,12 @@ jobs:
       - name: E2E tests
         run: npm test
 
+      # Which context rules, journeys and edge cases have tests. Fails on covers ids
+      # that match nothing, and on rules or critical journeys with no test at all.
+      - name: Context coverage
+        if: ${{ !cancelled() }}
+        run: npm run coverage -- --strict
+
       # Results as check runs on the commit/PR, with failures annotated in the diff.
       # Run even when tests failed; that's when the report matters most.
       - name: Report unit tests
@@ -75,3 +81,23 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 14
+
+  mutations:
+    name: Mutation check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      # Breaks the app on purpose (e2e/mutations.ts) and checks that the tests
+      # covering each break fail. Proves the tests, the agents' included, can fail.
+      - name: Break the app on purpose
+        run: npm run mutate

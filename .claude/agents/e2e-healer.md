@@ -81,6 +81,9 @@ in exactly this shape, with one entry per failing test:
 ```
 
 - `healed[].class` is one of `selector`, `timing`, `test-bug`, `data`.
+- `context_suggestions` (optional): context entries that look stale or incomplete, e.g.
+  `{ "context": "errands#add-errand", "suggestion": "The journey says 'Press Add'; the button is now 'Save'" }`.
+  Put these here, not in `evidence`. You never edit the context yourself.
 - `escalated[].class` is one of `app-bug`, `context-drift`, `environment`. Every escalated
   test must still be failing; you changed nothing for it.
 - Write the file even when there is nothing to heal (`"healed": []`).

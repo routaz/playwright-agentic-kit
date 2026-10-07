@@ -20,7 +20,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:unit": "node --test \"kit/**/*.test.ts\"",
-    "heal": "node kit/heal/local.ts"
+    "heal": "node kit/heal/local.ts",
+    "coverage": "node kit/observe/coverage.ts",
+    "mutate": "node kit/observe/mutate.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

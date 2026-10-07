@@ -8,7 +8,7 @@ Most "AI testing" demos either generate a pile of throwaway scripts or quietly s
 - **Agents are only as good as their context.** Each project describes its app and features in small, schema-validated YAML files: rules, journeys, risks, known issues. Agents read those instead of guessing from the DOM.
 - **The project-specific surface is tiny.** To point the kit at a new app you write one adapter (create a user, sign them in, seed data) and the context files. Everything else is reusable.
 
-> **Status:** Phase 3 of 5 done. The foundation runs green against the bundled demo app, the planner and generator have done their first real run (see [`e2e/plans/sign-in.plan.md`](e2e/plans/sign-in.plan.md)), and red tests can be healed locally or in CI behind a guard written in code. Next: observability.
+> **Status:** Phase 4 of 5 done. The foundation runs green against the bundled demo app, the agents have planned and generated real tests, red tests can be healed behind a guard written in code, and every test is proven able to fail. Next: more adapters.
 
 ## How it fits together
 
@@ -66,6 +66,8 @@ Node 22.18 or newer.
 | `.claude/agents/`          | kit     | The planner, generator and healer agents                                                                                                                                                    |
 | `examples/demo-app/`       | demo    | A small dependency-free errands app with sign-in, so the template runs on its own                                                                                                           |
 | `kit/heal/`                | kit     | Guard, snapshots, report format, `npm run heal` and the CI publisher                                                                                                                        |
+| `kit/observe/`             | kit     | Context coverage report and the mutation runner                                                                                                                                             |
+| `e2e/mutations.ts`         | project | Deliberate breaks of the app, each tied to the context id it violates                                                                                                                       |
 | `scripts/check-leaks.mjs`  | kit     | Fails CI if any private term (client names, say) appears in files or commit history                                                                                                         |
 
 ## The agents
@@ -133,6 +135,31 @@ npm run heal
 
 A changed expected value isn't rejected, because fixing a wrong test can need one, but it's flagged for careful review. Every rule has [unit tests](kit/heal/guard.test.ts). Rehearsed against the demo app with a stand-in healer: an honest locator repair went through. A dishonest one tried to edit the context file, skip a test, weaken a check and loosen exact text to a pattern; it was rejected and undone, leaving the developer's own uncommitted change intact.
 
+## Proving the tests: coverage and mutations
+
+AI-written tests are only worth something if they test the right things and can actually fail. Two reports check both, locally and in CI.
+
+**Context coverage** (`npm run coverage`) maps every rule, journey and edge case in `e2e/context/` to the tests whose `covers` annotation names it. It reads Playwright's list mode, so nothing has to run. With `--strict` (as in CI) it fails on a `covers` id that matches nothing, usually a typo or a renamed id, and on any rule or critical journey with no test.
+
+**The mutation check** (`npm run mutate`) breaks the app on purpose. Each break in [`e2e/mutations.ts`](e2e/mutations.ts) names the context id it violates:
+
+```ts
+{
+  id: 'sign-out-keeps-session',
+  covers: 'sign-in#server-sign-out',
+  description: 'sign-out clears the cookie but the server session lives on',
+  edits: [{ file: 'examples/demo-app/server.mjs', find: 'if (sid) sessions.delete(sid);', replace: '' }],
+}
+```
+
+The runner applies it, runs **only the tests covering that id**, and expects at least one to fail. A break the tests don't notice means the tests are too weak. Breaks outside files, like a database function, use `apply()` and `undo()` instead of `edits`.
+
+- **The tests must pass first.** A baseline run of every involved test has to be green, or nothing counts.
+- **Always restored.** Original files are journaled before each edit and put back afterwards, on Ctrl-C, and at the start of the next run if one was killed. Each run starts a fresh app server, so a leftover server holding old code can't produce a false result; a run that couldn't start is reported as an error, never as "survived".
+- **A break that no longer applies** (its text changed or appears twice) is reported as stale instead of silently skipped.
+
+Its first run found a weak test, one written by hand: "a blank title adds nothing" passed even when the server saved blank titles, because it checked an empty list that was already empty before the server answered. The generator's instructions now cover that case.
+
 ## Design decisions
 
 **Every test makes its own users.** No shared seed accounts, no global reset between tests. That keeps tests independent, lets them run fully in parallel against one backend, and means a test never fails because another one changed "its" data.
@@ -159,7 +186,7 @@ A changed expected value isn't rejected, because fixing a wrong test can need on
 - [x] **Phase 1: Foundation.** Config factory, adapter contract, fixtures, context schemas and validator, demo app, 20 tests, CI, leak check.
 - [x] **Phase 2: Agents.** Planner, generator and healer as Claude Code subagents driving a real browser through Playwright MCP, all reading `e2e/context/`. First run: the planner found 4 coverage gaps in sign-in (including a sign-out test that only checked the UI, not the server), and the generator closed them. Each new test was checked by breaking the app on purpose; all four caught the break.
 - [x] **Phase 3: Healing.** `npm run heal` on a developer's own Claude login, plus an opt-in CI workflow that publishes a pull request and issues for real app bugs. Either way, a guard written in code rejects any repair that weakens a test.
-- [ ] **Phase 4: Observability.** A log of every agent change and the reason for it, plus a summary of what was generated, healed or escalated.
+- [x] **Phase 4: Observability.** Context coverage report (strict in CI), a mutation runner that proves each test can fail by breaking the app on purpose, and context suggestions in the heal report.
 - [ ] **Phase 5: More adapters.** Ready-made adapters for common backends, such as Postgres with row-level security.
 
 ## Licence

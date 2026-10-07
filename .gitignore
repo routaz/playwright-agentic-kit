@@ -22,3 +22,6 @@ heal.local.json
 
 # Test reports for CI (JUnit XML)
 reports/
+
+# Mutation runner journal (restores files if a run is killed)
+.mutate/

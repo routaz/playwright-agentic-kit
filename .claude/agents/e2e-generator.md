@@ -36,6 +36,10 @@ Read:
      page object instead of a raw locator in the spec.
    - Locators: role with accessible name, then label, then text for non-interactive copy.
      No CSS, ids, XPath or `nth()` unless the plan is literally about position.
+   - When the expected state was already true before the action (a list that should
+     stay empty, a value that should stay the same), wait for the app's answer first
+     (`page.waitForResponse`, or reload) before asserting. Otherwise the assertion
+     passes before the app has done anything, and the test can't fail.
    - Web-first assertions only (`await expect(locator).toHave…`). No `waitForTimeout`,
      no `networkidle`, no `if` in tests.
    - Add the scenario's **Covers** as an annotation, so coverage can be traced back to context:

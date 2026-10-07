@@ -22,6 +22,13 @@ with a human reviewing each step. They use the Playwright MCP server from `.mcp.
    with `kit/heal/guard.ts`. CI can do the same when `HEAL_IN_CI` is enabled
    (`.github/workflows/heal.yml`). After healing interactively, run `node kit/heal/run-guard.ts`.
 
+## Proving the tests
+
+- `npm run coverage` shows which context items have tests. Run it after generating.
+- `npm run mutate` breaks the app on purpose (`e2e/mutations.ts`) and checks the covering
+  tests fail. When adding tests for a rule, add a break for it too. A break that survives
+  means the test needs strengthening, not the break removing.
+
 ## Ground rules (all agents, and you)
 
 - `e2e/context/` is the source of truth for intended behaviour. Agents never edit it.

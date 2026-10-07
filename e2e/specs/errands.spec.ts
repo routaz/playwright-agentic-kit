@@ -80,9 +80,16 @@ test.describe('errands', () => {
     async ({ signedInPage: page }) => {
       const errands = new ErrandsPage(page);
       await errands.goto();
+      // The empty state is already showing, so wait for the server's answer and
+      // reload: otherwise this passes before anything could have been saved.
+      // (Found by `npm run mutate`: it survived the server saving blank titles.)
+      const answered = page.waitForResponse((r) => r.url().endsWith('/api/errands') && r.request().method() === 'POST');
       await errands.addErrand('   ');
+      await answered;
+      await page.reload();
 
       await expect(errands.empty).toBeVisible();
+      await expect(errands.remaining).toHaveText('0 errands left');
     },
   );
 

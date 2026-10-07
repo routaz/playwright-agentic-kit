@@ -13,6 +13,11 @@ export interface HealReport {
     actual: string;
     evidence: string;
   }[];
+  /**
+   * Notes for a person: context entries that look stale or incomplete, noticed while
+   * healing (e.g. a journey still says "Press Add" after a rename). Never acted on by the agent.
+   */
+  context_suggestions?: { context: string; suggestion: string }[];
 }
 
 export interface GuardSummary {
@@ -38,6 +43,9 @@ export function parseReport(raw: unknown): HealReport {
   }
   for (const h of r.healed) if (!HEALED.has(h.class)) throw new Error(`Unknown healed class "${h.class}"`);
   for (const e of r.escalated) if (!ESCALATED.has(e.class)) throw new Error(`Unknown escalated class "${e.class}"`);
+  if (r.context_suggestions !== undefined && !Array.isArray(r.context_suggestions)) {
+    throw new Error('"context_suggestions" must be an array when present.');
+  }
   return r as HealReport;
 }
 
@@ -99,6 +107,14 @@ export function renderPullRequest(o: {
       '| Test | Class | Expected | Actual |',
       '| --- | --- | --- | --- |',
       ...report.escalated.map((e) => `| ${cell(e.test)} | \`${e.class}\` | ${cell(e.expected)} | ${cell(e.actual)} |`),
+    );
+  }
+  if (report.context_suggestions?.length) {
+    lines.push(
+      '',
+      '## Context suggestions (for a person to decide)',
+      '',
+      ...report.context_suggestions.map((c) => `- \`${c.context}\`: ${c.suggestion}`),
     );
   }
   lines.push(

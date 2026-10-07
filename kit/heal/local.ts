@@ -100,6 +100,7 @@ for (const e of report?.escalated ?? [])
   console.log(
     `  reported  [${e.class}] ${e.test}\n            expected: ${e.expected}\n            actual:   ${e.actual}`,
   );
+for (const c of report?.context_suggestions ?? []) console.log(`  context   ${c.context}: ${c.suggestion}`);
 if (run) console.log(`  suite now: ${run.passed} passed, ${run.failed} failed, ${run.flaky} flaky`);
 
 // 6. What to do with the result.

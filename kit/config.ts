@@ -59,7 +59,9 @@ export function defineKitConfig(options: KitConfigOptions): PlaywrightTestConfig
             url: baseURL,
             env: options.webServer.env,
             timeout: options.webServer.timeout ?? 60_000,
-            reuseExistingServer: !ci,
+            // E2E_FRESH_SERVER=1 forbids reusing a running server: the mutation runner
+            // needs the app restarted with its changed code, never an old process.
+            reuseExistingServer: !ci && !process.env.E2E_FRESH_SERVER,
           }
         : undefined,
     ...options.overrides,
