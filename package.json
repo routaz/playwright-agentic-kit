@@ -1,0 +1,28 @@
+{
+  "name": "playwright-agentic-kit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Playwright E2E template built for AI agents to plan, write and repair tests from structured app context, with humans reviewing every change.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "demo": "node examples/demo-app/server.mjs",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit",
+    "context:check": "node kit/context/check.ts",
+    "check:leaks": "node scripts/check-leaks.mjs",
+    "check": "npm run typecheck && npm run context:check && npm run check:leaks"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.4",
+    "ajv": "^8.20.0",
+    "typescript": "^7.0.2",
+    "yaml": "^2.9.1"
+  }
+}

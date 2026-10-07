@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://playwright-agentic-kit/schema/app.json",
+  "title": "App context",
+  "description": "One per project (e2e/context/app.yaml). What the app is and the rules every generated test must follow.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["app", "purpose", "conventions"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "app": { "type": "string", "description": "Name of the app under test." },
+    "purpose": { "type": "string", "description": "One or two sentences on who uses it and why. Gives agents the business 'why' behind the tests." },
+    "stack": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Frameworks and services that affect how to test it (e.g. 'React SPA with hash routes', 'Postgres with row-level security')."
+    },
+    "personas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "conventions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "locators": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Locator rules in priority order, e.g. 'getByRole with accessible name', 'getByLabel', 'getByTestId as last resort'."
+        },
+        "data": { "type": "array", "items": { "type": "string" }, "description": "How tests get their data, e.g. 'every test creates its own user via the user fixture'." },
+        "avoid": { "type": "array", "items": { "type": "string" }, "description": "Things generated tests must never do." }
+      }
+    },
+    "untestable": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Areas the agents should not try to automate, and why (e.g. third-party OAuth popups, canvas maps)."
+    }
+  }
+}

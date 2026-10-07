@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=../../kit/context/feature.schema.json
+feature: errands
+summary: Signed-in users add, complete and delete errands on a private list.
+risk: high
+entry: /#/errands
+personas: [member]
+rules:
+  - A user only ever sees their own errands
+  - Blank titles are not saved
+  - The remaining counter counts errands that are not done, with correct singular and plural
+  - Completed state persists across reloads
+journeys:
+  - id: add-errand
+    name: Add an errand
+    priority: critical
+    persona: member
+    steps:
+      - Type a title into "New errand"
+      - Press Add
+    expect:
+      - The errand appears in the list, unchecked
+      - The input clears
+      - The counter goes up by one
+  - id: complete-errand
+    name: Tick off an errand
+    priority: critical
+    persona: member
+    given: [User has two errands]
+    steps: [Check one errand]
+    expect:
+      - The counter drops by one
+      - After a reload the errand is still checked
+  - id: delete-errand
+    name: Delete an errand
+    priority: important
+    persona: member
+    given: [User has one errand]
+    steps: [Press the delete button for that errand]
+    expect: [The list shows the empty state]
+edge_cases:
+  - Title with only whitespace
+  - Very long title
+  - Title containing HTML, which must render as text
+  - Two users signed in at the same time
+out_of_scope:
+  - Reordering errands (not built)

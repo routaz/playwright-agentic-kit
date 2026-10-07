@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../../kit/context/app.schema.json
+app: Errands
+purpose: >
+  A personal to-do list for small chores. People sign in, keep a private list
+  of errands, tick them off and delete them. Privacy between accounts matters.
+stack:
+  - Plain JavaScript single-page app with hash routes (#/login, #/errands)
+  - Node HTTP server with an in-memory store and cookie sessions
+personas:
+  - id: member
+    description: Signed-in user managing their own list.
+  - id: visitor
+    description: Not signed in.
+conventions:
+  locators:
+    - getByRole with the accessible name
+    - getByLabel for form fields
+    - getByText only for non-interactive copy
+    - never CSS classes, ids or XPath
+  data:
+    - Every test creates its own users through the user, newUser or data fixtures
+    - Sign in through the signedInPage or as() fixtures; only sign-in specs use the form
+    - Reuse page objects in e2e/pages and add methods there instead of raw locators in specs
+  avoid:
+    - Fixed waits (waitForTimeout); rely on web-first assertions
+    - Asserting on data another test created
+    - Conditional logic in tests
+untestable:
+  - Nothing in the demo app

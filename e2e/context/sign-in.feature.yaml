@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=../../kit/context/feature.schema.json
+feature: sign-in
+summary: Email and password sign-in, sign-out, and keeping signed-out visitors away from private pages.
+risk: high
+entry: /#/login
+personas: [visitor, member]
+rules:
+  - Error messages never reveal whether the email or the password was wrong
+  - Private pages send signed-out visitors to the login page
+  - Signing out invalidates the session on the server, not only in the browser
+journeys:
+  - id: sign-in
+    name: Sign in with valid credentials
+    priority: critical
+    persona: visitor
+    given: [An existing account]
+    steps: [Enter email and password, Press Sign in]
+    expect: [The errand list shows, greeting the user by name]
+  - id: wrong-password
+    name: Wrong password
+    priority: critical
+    persona: visitor
+    steps: [Enter a known email with the wrong password, Press Sign in]
+    expect: [A generic error shows, The user stays on the login page]
+  - id: sign-out
+    name: Sign out
+    priority: important
+    persona: member
+    steps: [Press Sign out]
+    expect: [The login page shows, Opening the errand list again still shows the login page]
+edge_cases:
+  - Email typed with different capitalisation
+  - Empty fields (blocked by the browser's required-field validation)

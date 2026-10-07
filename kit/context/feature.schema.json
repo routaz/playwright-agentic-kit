@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://playwright-agentic-kit/schema/feature.json",
+  "title": "Feature context",
+  "description": "One per feature (e2e/context/<feature>.feature.yaml). What a human tester would want to know before writing tests for it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["feature", "summary", "risk", "journeys"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "feature": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "Slug. Spec files for this feature are named <feature>.spec.ts." },
+    "summary": { "type": "string" },
+    "risk": {
+      "enum": ["high", "medium", "low"],
+      "description": "high: money, data loss, privacy, sign-in. Drives how many edge cases the planner writes."
+    },
+    "entry": { "type": "string", "description": "Path where the feature starts, relative to baseURL." },
+    "personas": { "type": "array", "items": { "type": "string" }, "description": "Persona ids from app.yaml that use this feature." },
+    "rules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Business rules that must always hold. Each one should end up asserted by at least one test."
+    },
+    "journeys": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "priority", "steps", "expect"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "name": { "type": "string" },
+          "priority": { "enum": ["critical", "important", "nice"] },
+          "persona": { "type": "string" },
+          "given": { "type": "array", "items": { "type": "string" }, "description": "Preconditions, in terms of the data fixtures." },
+          "steps": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "expect": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+        }
+      }
+    },
+    "edge_cases": { "type": "array", "items": { "type": "string" } },
+    "known_issues": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Bugs or flakiness already known, so agents don't report them as new or 'heal' around them."
+    },
+    "out_of_scope": { "type": "array", "items": { "type": "string" } }
+  }
+}
