@@ -5,10 +5,14 @@ risk: high
 entry: /#/errands
 personas: [member]
 rules:
-  - A user only ever sees their own errands
-  - Blank titles are not saved
-  - The remaining counter counts errands that are not done, with correct singular and plural
-  - Completed state persists across reloads
+  - id: private-lists
+    rule: A user only ever sees their own errands
+  - id: no-blank-titles
+    rule: Blank titles are not saved
+  - id: remaining-counter
+    rule: The remaining counter counts errands that are not done, with correct singular and plural
+  - id: done-persists
+    rule: Completed state persists across reloads
 journeys:
   - id: add-errand
     name: Add an errand
@@ -38,9 +42,13 @@ journeys:
     steps: [Press the delete button for that errand]
     expect: [The list shows the empty state]
 edge_cases:
-  - Title with only whitespace
-  - Very long title
-  - Title containing HTML, which must render as text
-  - Two users signed in at the same time
+  - id: whitespace-title
+    case: Title with only whitespace
+  - id: long-title
+    case: Very long title
+  - id: html-title
+    case: Title containing HTML, which must render as text
+  - id: two-users
+    case: Two users signed in at the same time
 out_of_scope:
   - Reordering errands (not built)

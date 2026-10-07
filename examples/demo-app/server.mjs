@@ -56,9 +56,14 @@ async function api(req, res, path) {
     if (!user || user.password !== password) return send(res, 401, { error: 'invalid_credentials' });
     const sid = randomUUID();
     sessions.set(sid, user.email);
-    return send(res, 200, { email: user.email, name: user.name }, {
-      'set-cookie': `sid=${sid}; Path=/; HttpOnly; SameSite=Lax`,
-    });
+    return send(
+      res,
+      200,
+      { email: user.email, name: user.name },
+      {
+        'set-cookie': `sid=${sid}; Path=/; HttpOnly; SameSite=Lax`,
+      },
+    );
   }
 
   if (path === '/api/session' && method === 'DELETE') {
@@ -68,7 +73,8 @@ async function api(req, res, path) {
   }
 
   const user = currentUser(req);
-  if (path === '/api/me') return user ? send(res, 200, { email: user.email, name: user.name }) : send(res, 401, { error: 'unauthenticated' });
+  if (path === '/api/me')
+    return user ? send(res, 200, { email: user.email, name: user.name }) : send(res, 401, { error: 'unauthenticated' });
   if (!user) return send(res, 401, { error: 'unauthenticated' });
 
   if (path === '/api/errands' && method === 'GET') return send(res, 200, listFor(user.email));

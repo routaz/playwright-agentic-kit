@@ -16,12 +16,15 @@
     "typecheck": "tsc --noEmit",
     "context:check": "node kit/context/check.ts",
     "check:leaks": "node scripts/check-leaks.mjs",
-    "check": "npm run typecheck && npm run context:check && npm run check:leaks"
+    "check": "npm run typecheck && npm run format:check && npm run context:check && npm run check:leaks",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.4",
     "ajv": "^8.20.0",
+    "prettier": "^3.9.9",
     "typescript": "^7.0.2",
     "yaml": "^2.9.1"
   }

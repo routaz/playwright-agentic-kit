@@ -22,8 +22,8 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
 
-      - name: Typecheck and validate context
-        run: npm run typecheck && npm run context:check
+      - name: Typecheck, format and validate context
+        run: npm run typecheck && npm run format:check && npm run context:check
 
       - name: Check for leaked private names
         run: npm run check:leaks

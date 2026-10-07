@@ -15,6 +15,11 @@ export interface KitFixtures<TUser, TData> {
   as: (user: TUser) => Promise<Page>;
   /** Make another fresh user, cleaned up after the test like `user`. */
   newUser: () => Promise<TUser>;
+  /**
+   * Sign the default `page` in as a specific user, e.g. one made with `data` helpers.
+   * Agent seed files use this, because the agents take over the default `page`.
+   */
+  signIn: (user: TUser) => Promise<void>;
 }
 
 interface Internal<TUser> {
@@ -55,12 +60,34 @@ export function createKitTest<TUser, TData>(adapter: KitAdapter<TUser, TData>) {
     },
 
     as: async (
-      { browser, adapterCtx, baseURL, locale, timezoneId, serviceWorkers, viewport, userAgent, deviceScaleFactor, isMobile, hasTouch },
+      {
+        browser,
+        adapterCtx,
+        baseURL,
+        locale,
+        timezoneId,
+        serviceWorkers,
+        viewport,
+        userAgent,
+        deviceScaleFactor,
+        isMobile,
+        hasTouch,
+      },
       use,
     ) => {
       const contexts: Awaited<ReturnType<typeof browser.newContext>>[] = [];
       // Same options the built-in `page` gets, so every user sees the same device and locale.
-      const options = { baseURL, locale, timezoneId, serviceWorkers, viewport, userAgent, deviceScaleFactor, isMobile, hasTouch };
+      const options = {
+        baseURL,
+        locale,
+        timezoneId,
+        serviceWorkers,
+        viewport,
+        userAgent,
+        deviceScaleFactor,
+        isMobile,
+        hasTouch,
+      };
       await use(async (u) => {
         const context = await browser.newContext(options);
         contexts.push(context);
@@ -68,6 +95,10 @@ export function createKitTest<TUser, TData>(adapter: KitAdapter<TUser, TData>) {
         return context.newPage();
       });
       for (const c of contexts) await c.close();
+    },
+
+    signIn: async ({ page, adapterCtx }, use) => {
+      await use((u) => adapter.signIn(page.context(), u, adapterCtx));
     },
 
     signedInPage: async ({ page, user, adapterCtx }, use) => {

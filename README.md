@@ -8,7 +8,7 @@ Most "AI testing" demos either generate a pile of throwaway scripts or quietly s
 - **Agents are only as good as their context.** Each project describes its app and features in small, schema-validated YAML files: rules, journeys, risks, known issues. Agents read those instead of guessing from the DOM.
 - **The project-specific surface is tiny.** To point the kit at a new app you write one adapter (create a user, sign them in, seed data) and the context files. Everything else is reusable.
 
-> **Status:** Phase 1 of 5. The deterministic foundation is done and runs green against the bundled demo app. The agent layer is next; see the [roadmap](#roadmap).
+> **Status:** Phase 2 of 5. The deterministic foundation runs green against the bundled demo app, and the planner, generator and healer agents are in place. See the [roadmap](#roadmap).
 
 ## How it fits together
 
@@ -24,7 +24,7 @@ flowchart LR
     FX["createKitTest()<br/>user · as() · data fixtures"]
     SCH["context schemas<br/>+ validator"]
   end
-  subgraph Agents["Agents (phase 2)"]
+  subgraph Agents["Agents (.claude/agents)"]
     PL["planner"] --> GEN["generator"]
     HEAL["healer"]
   end
@@ -43,7 +43,7 @@ flowchart LR
 ```bash
 npm install
 npx playwright install chromium
-npm test            # 20 tests, desktop + mobile, about 3 seconds
+npm test            # desktop + mobile, a few seconds
 npm run test:ui     # Playwright's UI mode
 npm run demo        # the demo app on http://localhost:4173 (demo@example.com / demo-password)
 ```
@@ -52,17 +52,36 @@ Node 22.18 or newer.
 
 ## What's in the box
 
-| Path | Owner | What it does |
-| --- | --- | --- |
-| `kit/config.ts` | kit | `defineKitConfig()`: pinned locale and timezone, service workers blocked, traces on failure, a JSON report for agents, optional mobile project, `E2E_BASE_URL` to retarget a run at staging |
-| `kit/fixtures.ts` | kit | `createKitTest(adapter)`: fresh `user` per test, `signedInPage`, `as(user)` for multi-account flows, `newUser()`, app `data` helpers, automatic cleanup |
-| `kit/adapters/types.ts` | kit | The adapter contract, the only code a new project must write |
-| `kit/context/` | kit | JSON schemas for app and feature context, plus `npm run context:check` |
-| `e2e/support/adapter.ts` | project | Demo app adapter, seeding through test-only endpoints |
-| `e2e/context/` | project | `app.yaml` (conventions every test follows) and `*.feature.yaml` (rules, journeys, edge cases) |
-| `e2e/pages/`, `e2e/specs/` | project | Page objects and specs |
-| `examples/demo-app/` | demo | A small dependency-free errands app with sign-in, so the template runs on its own |
-| `scripts/check-leaks.mjs` | kit | Fails CI if any private term (client names, say) appears in files or commit history |
+| Path                       | Owner   | What it does                                                                                                                                                                                |
+| -------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kit/config.ts`            | kit     | `defineKitConfig()`: pinned locale and timezone, service workers blocked, traces on failure, a JSON report for agents, optional mobile project, `E2E_BASE_URL` to retarget a run at staging |
+| `kit/fixtures.ts`          | kit     | `createKitTest(adapter)`: fresh `user` per test, `signedInPage`, `as(user)` for multi-account flows, `newUser()`, app `data` helpers, automatic cleanup                                     |
+| `kit/adapters/types.ts`    | kit     | The adapter contract, the only code a new project must write                                                                                                                                |
+| `kit/context/`             | kit     | JSON schemas for app and feature context, plus `npm run context:check`                                                                                                                      |
+| `e2e/support/adapter.ts`   | project | Demo app adapter, seeding through test-only endpoints                                                                                                                                       |
+| `e2e/context/`             | project | `app.yaml` (conventions every test follows) and `*.feature.yaml` (rules, journeys, edge cases)                                                                                              |
+| `e2e/pages/`, `e2e/specs/` | project | Page objects and specs                                                                                                                                                                      |
+| `e2e/seeds/`               | project | Starting states for the agents, which double as smoke tests                                                                                                                                 |
+| `e2e/plans/`               | project | Test plans written by the planner and reviewed by a human                                                                                                                                   |
+| `.claude/agents/`          | kit     | The planner, generator and healer agents                                                                                                                                                    |
+| `examples/demo-app/`       | demo    | A small dependency-free errands app with sign-in, so the template runs on its own                                                                                                           |
+| `scripts/check-leaks.mjs`  | kit     | Fails CI if any private term (client names, say) appears in files or commit history                                                                                                         |
+
+## The agents
+
+Three Claude Code subagents in `.claude/agents/`, driving a real browser through the Playwright MCP server in `.mcp.json`. They started from Playwright's own `init-agents` templates and were rewritten around the context files and one principle: **an agent may fix a test that is wrong, never a test that is right about a broken app.**
+
+| Agent           | Reads                                                        | Produces                                                                             | Key constraint                                                                                                                                |
+| --------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `e2e-planner`   | feature context, existing `covers` annotations, the live app | `e2e/plans/<feature>.plan.md` with a coverage table, new scenarios and findings      | Plans only the gaps. When the app contradicts a context rule, it records a finding instead of planning a test around the bug.                 |
+| `e2e-generator` | a plan someone has reviewed                                  | tests in `e2e/specs/`, using kit fixtures and page objects, each run until it passes | Never edits an expectation to match the app. If the app disagrees with the plan, the scenario is reported as blocked.                         |
+| `e2e-healer`    | failing tests, `test-results/results.json`                   | locator, timing, test-bug and data fixes, plus a heal report                         | Classifies every failure first. `app-bug` and `context-drift` are reported, never "healed". No skips, no weaker assertions, no context edits. |
+
+Agents start from **seeds** (`e2e/seeds/`), small tests that put the browser in a known state (signed out, signed in with an empty list, signed in with data). The seeds also run as smoke tests, so a broken seed fails CI instead of confusing an agent.
+
+Every test carries a `covers` annotation (`errands#private-lists`, `errands#edge:long-title`) pointing at an id in the context file, so coverage can be traced from rule to test and back.
+
+Try it: open this folder in Claude Code, approve the `playwright-test` MCP server, and ask _"Use the e2e-planner agent to plan sign-in."_ [`CLAUDE.md`](CLAUDE.md) describes the full loop.
 
 ## Design decisions
 
@@ -72,7 +91,7 @@ Node 22.18 or newer.
 
 **Accessible locators only.** `getByRole` and `getByLabel` first, `getByTestId` as a last resort, never CSS or XPath. Tests that find elements the way assistive technology does catch accessibility regressions for free, and they're also what agents generate most reliably.
 
-**Context as data, not prose.** Feature context is structured YAML with a schema, so it can be validated in CI, versioned with the code and fed to agents without prompt sprawl. The `rules` list doubles as a coverage checklist: each rule should be asserted somewhere.
+**Context as data, not prose.** Feature context is structured YAML with a schema, so it can be validated in CI, versioned with the code and fed to agents without prompt sprawl. Rules, journeys and edge cases all have ids, so they double as a coverage checklist.
 
 **Retries only to collect evidence.** One retry in CI, and retried tests show up as flaky in the report. A retry that turns red into green is a bug report, not a fix.
 
@@ -82,13 +101,13 @@ Node 22.18 or newer.
 2. Replace `e2e/support/adapter.ts` with your app's version: how to create a user, how to sign one in, any seeding helpers.
 3. Point `playwright.config.ts` at your app (`baseURL`, and `webServer` to start it).
 4. Rewrite `e2e/context/app.yaml` and add a `*.feature.yaml` per feature.
-5. Delete `examples/demo-app/` and the demo specs.
+5. Replace the seeds in `e2e/seeds/` with your app's starting states, then delete `examples/demo-app/` and the demo specs.
 6. Optional: create a git-ignored `.denylist` and a `LEAK_DENYLIST` repository secret listing names that must never appear in the repo.
 
 ## Roadmap
 
 - [x] **Phase 1: Foundation.** Config factory, adapter contract, fixtures, context schemas and validator, demo app, 20 tests, CI, leak check.
-- [ ] **Phase 2: Agents.** Planner, generator and healer as Claude Code subagents driving a real browser through Playwright MCP, all reading `e2e/context/`.
+- [ ] **Phase 2: Agents.** Planner, generator and healer as Claude Code subagents driving a real browser through Playwright MCP, all reading `e2e/context/`. _Agents and seeds are in place; the first plan and generated tests are next._
 - [ ] **Phase 3: Healing workflow.** On a red CI run, the healer classifies each failure (selector, timing, data, environment or real bug) and opens a pull request with a proposed fix, or a bug report when the app is wrong.
 - [ ] **Phase 4: Observability.** A log of every agent change and the reason for it, plus a summary of what was generated, healed or escalated.
 - [ ] **Phase 5: More adapters.** Ready-made adapters for common backends, such as Postgres with row-level security.

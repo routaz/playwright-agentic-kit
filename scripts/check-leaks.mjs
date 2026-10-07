@@ -20,7 +20,8 @@ if (terms.length === 0) {
   process.exit(0);
 }
 
-const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] });
+const git = (...args) =>
+  execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] });
 const hits = [];
 
 for (const file of git('ls-files', '-z').split('\0').filter(Boolean)) {

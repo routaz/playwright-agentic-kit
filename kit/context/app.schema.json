@@ -9,7 +9,10 @@
   "properties": {
     "$schema": { "type": "string" },
     "app": { "type": "string", "description": "Name of the app under test." },
-    "purpose": { "type": "string", "description": "One or two sentences on who uses it and why. Gives agents the business 'why' behind the tests." },
+    "purpose": {
+      "type": "string",
+      "description": "One or two sentences on who uses it and why. Gives agents the business 'why' behind the tests."
+    },
     "stack": {
       "type": "array",
       "items": { "type": "string" },
@@ -36,8 +39,16 @@
           "items": { "type": "string" },
           "description": "Locator rules in priority order, e.g. 'getByRole with accessible name', 'getByLabel', 'getByTestId as last resort'."
         },
-        "data": { "type": "array", "items": { "type": "string" }, "description": "How tests get their data, e.g. 'every test creates its own user via the user fixture'." },
-        "avoid": { "type": "array", "items": { "type": "string" }, "description": "Things generated tests must never do." }
+        "data": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "How tests get their data, e.g. 'every test creates its own user via the user fixture'."
+        },
+        "avoid": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Things generated tests must never do."
+        }
       }
     },
     "untestable": {

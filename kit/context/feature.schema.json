@@ -8,18 +8,34 @@
   "required": ["feature", "summary", "risk", "journeys"],
   "properties": {
     "$schema": { "type": "string" },
-    "feature": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "Slug. Spec files for this feature are named <feature>.spec.ts." },
+    "feature": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Slug. Spec files for this feature are named <feature>.spec.ts."
+    },
     "summary": { "type": "string" },
     "risk": {
       "enum": ["high", "medium", "low"],
       "description": "high: money, data loss, privacy, sign-in. Drives how many edge cases the planner writes."
     },
     "entry": { "type": "string", "description": "Path where the feature starts, relative to baseURL." },
-    "personas": { "type": "array", "items": { "type": "string" }, "description": "Persona ids from app.yaml that use this feature." },
-    "rules": {
+    "personas": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Business rules that must always hold. Each one should end up asserted by at least one test."
+      "description": "Persona ids from app.yaml that use this feature."
+    },
+    "rules": {
+      "type": "array",
+      "description": "Business rules that must always hold. Each one should end up asserted by at least one test, linked with a `covers: <feature>#<id>` annotation.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "rule"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "rule": { "type": "string" }
+        }
+      }
     },
     "journeys": {
       "type": "array",
@@ -33,13 +49,29 @@
           "name": { "type": "string" },
           "priority": { "enum": ["critical", "important", "nice"] },
           "persona": { "type": "string" },
-          "given": { "type": "array", "items": { "type": "string" }, "description": "Preconditions, in terms of the data fixtures." },
+          "given": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Preconditions, in terms of the data fixtures."
+          },
           "steps": { "type": "array", "minItems": 1, "items": { "type": "string" } },
           "expect": { "type": "array", "minItems": 1, "items": { "type": "string" } }
         }
       }
     },
-    "edge_cases": { "type": "array", "items": { "type": "string" } },
+    "edge_cases": {
+      "type": "array",
+      "description": "Covered with `covers: <feature>#edge:<id>`.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "case"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "case": { "type": "string" }
+        }
+      }
+    },
     "known_issues": {
       "type": "array",
       "items": { "type": "string" },

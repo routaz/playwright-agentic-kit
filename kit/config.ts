@@ -26,7 +26,7 @@ export function defineKitConfig(options: KitConfigOptions): PlaywrightTestConfig
   const baseURL = remote ?? options.baseURL;
 
   return defineConfig({
-    testDir: options.testDir ?? './e2e/specs',
+    testDir: options.testDir ?? './e2e',
     fullyParallel: true,
     forbidOnly: ci,
     // One retry in CI only, and the report marks retried tests as flaky.

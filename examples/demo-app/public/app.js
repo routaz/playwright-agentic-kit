@@ -30,7 +30,13 @@ function renderLogin(error) {
     h('label', { for: 'email' }, 'Email'),
     h('input', { id: 'email', name: 'email', type: 'email', autocomplete: 'username', required: true }),
     h('label', { for: 'password' }, 'Password'),
-    h('input', { id: 'password', name: 'password', type: 'password', autocomplete: 'current-password', required: true }),
+    h('input', {
+      id: 'password',
+      name: 'password',
+      type: 'password',
+      autocomplete: 'current-password',
+      required: true,
+    }),
     error ? h('p', { role: 'alert', class: 'error' }, error) : '',
     h('button', { type: 'submit' }, 'Sign in'),
   );
@@ -98,7 +104,9 @@ async function renderErrands() {
         h('input', { id: 'new-errand', name: 'title', placeholder: 'Buy milk' }),
         h('button', { type: 'submit' }, 'Add'),
       ),
-      items.length ? h('ul', { 'aria-label': 'Errands' }, ...items) : h('p', { class: 'empty' }, 'Nothing to do. Nice.'),
+      items.length
+        ? h('ul', { 'aria-label': 'Errands' }, ...items)
+        : h('p', { class: 'empty' }, 'Nothing to do. Nice.'),
       h('p', { role: 'status' }, left === 1 ? '1 errand left' : `${left} errands left`),
     ),
   );
