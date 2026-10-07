@@ -21,7 +21,8 @@ Read:
 
 ## For each scenario
 
-1. Call `generator_setup_page` with the scenario's seed.
+1. Call `generator_setup_page` with the scenario's seed. If it exposes `window.__e2e`, read it
+   with `browser_evaluate` to explore; in the spec itself use the fixtures instead, never `__e2e`.
 2. Perform every step and check every expectation live in the browser, using the step text
    as the intent. This is how you find out the real accessible names and behaviour. Don't
    write a locator you haven't seen work. Page-object locators that existing passing tests

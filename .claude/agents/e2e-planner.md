@@ -36,7 +36,10 @@ Never plan anything under `out_of_scope`. Don't plan around `known_issues`; list
 
 ## 3. Check against the real app
 
-Call `planner_setup_page` with the seed that matches the scenario's starting state, then
+Call `planner_setup_page` with the seed that matches the scenario's starting state. If the
+seed exposes values on `window.__e2e` (for example a test account's email and password), read
+them with `browser_evaluate(() => window.__e2e)` before navigating, and use them to try the
+successful paths too, not only the failures. Then
 walk through each planned scenario in the browser. Use accessibility snapshots, not
 screenshots. You're confirming that steps are possible and learning the exact accessible
 names of controls, so the generator doesn't have to guess.
@@ -47,7 +50,10 @@ it under **Findings** with what the rule says and what you observed.
 
 ## 4. Save the plan
 
-Save with `planner_save_plan` to `e2e/plans/<feature>.plan.md`, in this format:
+Save with `planner_save_plan` to `e2e/plans/<feature>.plan.md`. The tool has its own idea of a
+plan's layout; follow this one instead. Every scenario goes in the one spec file
+`e2e/specs/<feature>.spec.ts`, never a file per scenario, and the Coverage table and Findings
+come first:
 
 ```markdown
 # <Feature> test plan
@@ -91,5 +97,9 @@ Rules for scenarios:
   not enough on its own; pair it with proof the app reacted (focus moved, request sent or not
   sent, message shown).
 - Every expectation must be something that would fail if the rule it covers were broken.
+- Prove rules from the outside: the UI, the URL, or the app's own HTTP API (e.g. "the old
+  refresh token is rejected after sign-out"). Not request internals like status codes of a
+  background call, and not browser storage.
+- One scenario tests one thing. "Repeat with X" is a second scenario.
 
 Finish by replying with the coverage table and any findings. Keep it short; the plan file has the detail.

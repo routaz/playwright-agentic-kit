@@ -78,7 +78,7 @@ Three Claude Code subagents in `.claude/agents/`, driving a real browser through
 | `e2e-generator` | a plan someone has reviewed                                  | tests in `e2e/specs/`, using kit fixtures and page objects, each run until it passes | Never edits an expectation to match the app. If the app disagrees with the plan, the scenario is reported as blocked.                         |
 | `e2e-healer`    | failing tests, `test-results/results.json`                   | locator, timing, test-bug and data fixes, plus a heal report                         | Classifies every failure first. `app-bug` and `context-drift` are reported, never "healed". No skips, no weaker assertions, no context edits. |
 
-Agents start from **seeds** (`e2e/seeds/`), small tests that put the browser in a known state (signed out, signed in with an empty list, signed in with data). The seeds also run as smoke tests, so a broken seed fails CI instead of confusing an agent.
+Agents start from **seeds** (`e2e/seeds/`), small tests that put the browser in a known state (signed out, signed in with an empty list, signed in with data). The seeds also run as smoke tests, so a broken seed fails CI instead of confusing an agent. Agents can't see fixture values, so a seed that creates an account hands its credentials over with `exposeToAgents()`, and the agents read them from `window.__e2e`. That way they can try the successful paths too, not only the failures.
 
 Every test carries a `covers` annotation (`errands#private-lists`, `errands#edge:long-title`) pointing at an id in the context file, so coverage can be traced from rule to test and back.
 
