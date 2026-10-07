@@ -27,6 +27,9 @@ export function defineKitConfig(options: KitConfigOptions): PlaywrightTestConfig
 
   return defineConfig({
     testDir: options.testDir ?? './e2e',
+    // The kit can live inside the test folder (e2e/kit). Its own unit tests use
+    // node:test and are not Playwright tests.
+    testIgnore: ['**/kit/**'],
     fullyParallel: true,
     forbidOnly: ci,
     // One retry in CI only, and the report marks retried tests as flaky.

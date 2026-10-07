@@ -172,8 +172,15 @@ for (const m of mutations) {
       writeFileSync(e.file, current[e.file]);
     }
     pendingUndo = m.undo;
-    await m.apply?.();
     try {
+      // A break that can't be applied (its target changed) is stale, not a crash.
+      try {
+        await m.apply?.();
+      } catch (e) {
+        results.push({ ...base, status: 'stale', note: `apply() failed: ${(e as Error).message.split('\n')[0]}` });
+        console.log('STALE');
+        continue;
+      }
       const failed = run(selected);
       const status: Status = failed.length ? 'caught' : 'survived';
       results.push({ ...base, status, failed });

@@ -155,7 +155,7 @@ AI-written tests are only worth something if they test the right things and can 
 The runner applies it, runs **only the tests covering that id**, and expects at least one to fail. A break the tests don't notice means the tests are too weak. Breaks outside files, like a database function, use `apply()` and `undo()` instead of `edits`.
 
 - **The tests must pass first.** A baseline run of every involved test has to be green, or nothing counts.
-- **Always restored.** Original files are journaled before each edit and put back afterwards, on Ctrl-C, and at the start of the next run if one was killed. Each run starts a fresh app server, so a leftover server holding old code can't produce a false result; a run that couldn't start is reported as an error, never as "survived".
+- **Always restored.** Original files are journaled before each edit and put back afterwards, on Ctrl-C, and at the start of the next run if one was killed. Each run starts a fresh app server, on its own port (see `playwright.config.ts`), so neither a leftover server holding old code nor an agent session's server can produce a false result; a run that couldn't start is reported as an error, never as "survived".
 - **A break that no longer applies** (its text changed or appears twice) is reported as stale instead of silently skipped.
 
 Its first run found a weak test, one written by hand: "a blank title adds nothing" passed even when the server saved blank titles, because it checked an empty list that was already empty before the server answered. The generator's instructions now cover that case.
