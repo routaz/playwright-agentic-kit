@@ -86,7 +86,10 @@ Rules for scenarios:
 
 - Each scenario is independent and starts from its seed. No ordering between scenarios.
 - One behaviour per scenario. A failing test should point at one broken thing.
-- Expectations are observable in the UI or the URL, never internal state.
+- Expectations are observable in the UI, the URL or the app's own HTTP responses, never internal state.
+- An expectation must fail if the action silently did nothing. "Still on the same page" is
+  not enough on its own; pair it with proof the app reacted (focus moved, request sent or not
+  sent, message shown).
 - Every expectation must be something that would fail if the rule it covers were broken.
 
 Finish by replying with the coverage table and any findings. Keep it short; the plan file has the detail.

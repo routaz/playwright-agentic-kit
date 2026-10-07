@@ -8,7 +8,7 @@ Most "AI testing" demos either generate a pile of throwaway scripts or quietly s
 - **Agents are only as good as their context.** Each project describes its app and features in small, schema-validated YAML files: rules, journeys, risks, known issues. Agents read those instead of guessing from the DOM.
 - **The project-specific surface is tiny.** To point the kit at a new app you write one adapter (create a user, sign them in, seed data) and the context files. Everything else is reusable.
 
-> **Status:** Phase 2 of 5. The deterministic foundation runs green against the bundled demo app, and the planner, generator and healer agents are in place. See the [roadmap](#roadmap).
+> **Status:** Phase 2 of 5 done. The deterministic foundation runs green against the bundled demo app, and the planner and generator have done their first real run (see [`e2e/plans/sign-in.plan.md`](e2e/plans/sign-in.plan.md)). Next: the healing workflow. See the [roadmap](#roadmap).
 
 ## How it fits together
 
@@ -107,7 +107,7 @@ Try it: open this folder in Claude Code, approve the `playwright-test` MCP serve
 ## Roadmap
 
 - [x] **Phase 1: Foundation.** Config factory, adapter contract, fixtures, context schemas and validator, demo app, 20 tests, CI, leak check.
-- [ ] **Phase 2: Agents.** Planner, generator and healer as Claude Code subagents driving a real browser through Playwright MCP, all reading `e2e/context/`. _Agents and seeds are in place; the first plan and generated tests are next._
+- [x] **Phase 2: Agents.** Planner, generator and healer as Claude Code subagents driving a real browser through Playwright MCP, all reading `e2e/context/`. First run: the planner found 4 coverage gaps in sign-in (including a sign-out test that only checked the UI, not the server), and the generator closed them. Each new test was checked by breaking the app on purpose; all four caught the break.
 - [ ] **Phase 3: Healing workflow.** On a red CI run, the healer classifies each failure (selector, timing, data, environment or real bug) and opens a pull request with a proposed fix, or a bug report when the app is wrong.
 - [ ] **Phase 4: Observability.** A log of every agent change and the reason for it, plus a summary of what was generated, healed or escalated.
 - [ ] **Phase 5: More adapters.** Ready-made adapters for common backends, such as Postgres with row-level security.

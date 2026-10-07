@@ -24,7 +24,8 @@ Read:
 1. Call `generator_setup_page` with the scenario's seed.
 2. Perform every step and check every expectation live in the browser, using the step text
    as the intent. This is how you find out the real accessible names and behaviour. Don't
-   write a locator you haven't seen work.
+   write a locator you haven't seen work. Page-object locators that existing passing tests
+   already use count as proven; anything new must be tried in the browser first.
 3. Read `generator_read_log` for the locators and assertions that worked.
 4. Write the test yourself, using the log as raw material. Don't paste it verbatim:
    - Import `test` and `expect` from `../support/test`, never from `@playwright/test`.

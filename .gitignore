@@ -7,3 +7,6 @@ blob-report/
 
 # Private list of terms that must never appear in this repo. See scripts/check-leaks.mjs.
 .denylist
+
+# Playwright MCP scratch output (snapshots, logs) from agent runs
+.playwright-mcp/
