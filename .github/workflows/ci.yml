@@ -7,8 +7,12 @@ on:
 
 jobs:
   e2e:
+    name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      checks: write # dorny/test-reporter publishes its results as check runs
     steps:
       - uses: actions/checkout@v7
         with:
@@ -22,8 +26,16 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
 
-      - name: Typecheck, format, context and unit tests
-        run: npm run typecheck && npm run format:check && npm run context:check && npm run test:unit
+      - name: Typecheck, format and context
+        run: npm run typecheck && npm run format:check && npm run context:check
+
+      - name: Unit tests
+        run: >-
+          mkdir -p reports &&
+          node --test
+          --test-reporter=spec --test-reporter-destination=stdout
+          --test-reporter=junit --test-reporter-destination=reports/unit-junit.xml
+          "kit/**/*.test.ts"
 
       - name: Check for leaked private names
         run: npm run check:leaks
@@ -32,6 +44,26 @@ jobs:
 
       - name: E2E tests
         run: npm test
+
+      # Results as check runs on the commit/PR, with failures annotated in the diff.
+      # Run even when tests failed; that's when the report matters most.
+      - name: Report unit tests
+        if: ${{ !cancelled() }}
+        uses: dorny/test-reporter@v3
+        with:
+          name: Unit test results
+          path: reports/unit-junit.xml
+          reporter: java-junit
+          fail-on-empty: false # the unit step may not have run if an earlier step failed
+
+      - name: Report E2E tests
+        if: ${{ !cancelled() }}
+        uses: dorny/test-reporter@v3
+        with:
+          name: E2E test results
+          path: test-results/junit.xml
+          reporter: java-junit
+          fail-on-empty: false
 
       - uses: actions/upload-artifact@v7
         if: failure()

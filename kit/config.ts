@@ -37,6 +37,8 @@ export function defineKitConfig(options: KitConfigOptions): PlaywrightTestConfig
       ['html', { open: 'never', outputFolder: 'playwright-report' }],
       // Machine-readable results: the healer agent reads this to find what failed.
       ['json', { outputFile: 'test-results/results.json' }],
+      // JUnit XML for CI test reports (e.g. dorny/test-reporter).
+      ['junit', { outputFile: 'test-results/junit.xml', includeProjectInTestName: true }],
     ],
     use: {
       baseURL,

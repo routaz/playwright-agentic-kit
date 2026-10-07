@@ -19,3 +19,6 @@ heal.local.json
 
 # Personal Claude Code settings and permission approvals
 .claude/settings.local.json
+
+# Test reports for CI (JUnit XML)
+reports/
