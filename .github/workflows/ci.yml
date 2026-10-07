@@ -54,6 +54,7 @@ jobs:
           name: Unit test results
           path: reports/unit-junit.xml
           reporter: java-junit
+          use-actions-summary: false # check runs, so results show in the PR's checks
           fail-on-empty: false # the unit step may not have run if an earlier step failed
 
       - name: Report E2E tests
@@ -63,6 +64,7 @@ jobs:
           name: E2E test results
           path: test-results/junit.xml
           reporter: java-junit
+          use-actions-summary: false # check runs, so results show in the PR's checks
           fail-on-empty: false
 
       - uses: actions/upload-artifact@v7
