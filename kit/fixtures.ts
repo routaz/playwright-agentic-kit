@@ -45,7 +45,10 @@ export function createKitTest<TUser, TData>(adapter: KitAdapter<TUser, TData>) {
       const created: TUser[] = [];
       await use(created);
       if (adapter.deleteUser) {
-        for (const u of created) await adapter.deleteUser(u, adapterCtx);
+        // Try every user even if one fails, so a single error doesn't leave the rest behind.
+        const errors: unknown[] = [];
+        for (const u of created) await adapter.deleteUser(u, adapterCtx).catch((e: unknown) => errors.push(e));
+        if (errors.length) throw new AggregateError(errors, `Cleaning up ${errors.length} test user(s) failed`);
       }
     },
 
