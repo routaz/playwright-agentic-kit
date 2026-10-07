@@ -8,7 +8,7 @@ Most "AI testing" demos either generate a pile of throwaway scripts or quietly s
 - **Agents are only as good as their context.** Each project describes its app and features in small, schema-validated YAML files: rules, journeys, risks, known issues. Agents read those instead of guessing from the DOM.
 - **The project-specific surface is tiny.** To point the kit at a new app you write one adapter (create a user, sign them in, seed data) and the context files. Everything else is reusable.
 
-> **Status:** Phase 2 of 5 done. The deterministic foundation runs green against the bundled demo app, and the planner and generator have done their first real run (see [`e2e/plans/sign-in.plan.md`](e2e/plans/sign-in.plan.md)). Next: the healing workflow. See the [roadmap](#roadmap).
+> **Status:** Phase 3 of 5 done. The foundation runs green against the bundled demo app, the planner and generator have done their first real run (see [`e2e/plans/sign-in.plan.md`](e2e/plans/sign-in.plan.md)), and failing CI runs go to a guarded heal workflow. Next: observability.
 
 ## How it fits together
 
@@ -65,6 +65,7 @@ Node 22.18 or newer.
 | `e2e/plans/`               | project | Test plans written by the planner and reviewed by a human                                                                                                                                   |
 | `.claude/agents/`          | kit     | The planner, generator and healer agents                                                                                                                                                    |
 | `examples/demo-app/`       | demo    | A small dependency-free errands app with sign-in, so the template runs on its own                                                                                                           |
+| `kit/heal/`                | kit     | Guard, report format and publisher used by the heal workflow                                                                                                                                |
 | `scripts/check-leaks.mjs`  | kit     | Fails CI if any private term (client names, say) appears in files or commit history                                                                                                         |
 
 ## The agents
@@ -82,6 +83,33 @@ Agents start from **seeds** (`e2e/seeds/`), small tests that put the browser in 
 Every test carries a `covers` annotation (`errands#private-lists`, `errands#edge:long-title`) pointing at an id in the context file, so coverage can be traced from rule to test and back.
 
 Try it: open this folder in Claude Code, approve the `playwright-test` MCP server, and ask _"Use the e2e-planner agent to plan sign-in."_ [`CLAUDE.md`](CLAUDE.md) describes the full loop.
+
+## The heal workflow
+
+When CI goes red, [`.github/workflows/heal.yml`](.github/workflows/heal.yml) runs the healer and publishes what it finds. **The healer's rules are enforced by code, not just written in its prompt.**
+
+```
+CI fails ─► re-run tests ─► e2e-healer ─► guard ─► re-run tests ─► pull request + issues
+               │                            │
+       passes? flaky, stop        rejects?  nothing is published
+```
+
+1. **Reproduce.** If the failure doesn't happen again, it's flaky. The job says so and stops.
+2. **Heal.** The healer classifies every failure and repairs only `selector`, `timing`, `test-bug` and `data` problems. It writes `.heal/report.json`.
+3. **Guard.** [`kit/heal/guard.ts`](kit/heal/guard.ts) checks the diff and rejects the whole run if the healer:
+   - touched anything outside `e2e/specs`, `e2e/pages` or `e2e/support` (the context files, the app, the workflow);
+   - added `test.skip`, `.fixme`, `.only`, `waitForTimeout`, `networkidle`, a `catch`, or a commented-out assertion;
+   - left fewer assertions than before;
+   - swapped a check for a weaker one (`toHaveText` → `toBeVisible` or `toContainText`);
+   - loosened exact text to a pattern.
+
+   A changed expected value isn't rejected, because fixing a wrong test can need one, but the PR flags it for careful review.
+
+4. **Publish.** The repairs go to a `heal/<run>` pull request against the failing branch, with the evidence for each fix and fresh suite results. Each `app-bug` or `context-drift` becomes an issue, and repeats of an open one aren't filed twice.
+
+The guard has [unit tests](kit/heal/guard.test.ts) for every rule. A rehearsal against the demo app broke a business rule and played a dishonest healer: one that edited the context file, skipped a test, weakened a check and loosened exact text to a pattern. The guard rejected all four.
+
+**Setup:** add a `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`) or `ANTHROPIC_API_KEY` repository secret, and enable _Settings → Actions → General → Allow GitHub Actions to create and approve pull requests_.
 
 ## Design decisions
 
@@ -108,7 +136,7 @@ Try it: open this folder in Claude Code, approve the `playwright-test` MCP serve
 
 - [x] **Phase 1: Foundation.** Config factory, adapter contract, fixtures, context schemas and validator, demo app, 20 tests, CI, leak check.
 - [x] **Phase 2: Agents.** Planner, generator and healer as Claude Code subagents driving a real browser through Playwright MCP, all reading `e2e/context/`. First run: the planner found 4 coverage gaps in sign-in (including a sign-out test that only checked the UI, not the server), and the generator closed them. Each new test was checked by breaking the app on purpose; all four caught the break.
-- [ ] **Phase 3: Healing workflow.** On a red CI run, the healer classifies each failure (selector, timing, data, environment or real bug) and opens a pull request with a proposed fix, or a bug report when the app is wrong.
+- [x] **Phase 3: Healing workflow.** A red CI run triggers the healer. A guard written in code rejects any repair that weakens a test, and the result is published as a pull request plus issues for real app bugs.
 - [ ] **Phase 4: Observability.** A log of every agent change and the reason for it, plus a summary of what was generated, healed or escalated.
 - [ ] **Phase 5: More adapters.** Ready-made adapters for common backends, such as Postgres with row-level security.
 

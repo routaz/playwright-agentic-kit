@@ -1,0 +1,110 @@
+name: Heal
+
+# When CI fails, let the e2e-healer agent propose repairs. Everything it changes
+# goes through kit/heal/guard.ts before a pull request is opened, and real app
+# bugs become issues instead of edits.
+#
+# Needs one of these repository secrets:
+#   CLAUDE_CODE_OAUTH_TOKEN  from `claude setup-token` (uses a Claude subscription)
+#   ANTHROPIC_API_KEY        from the Anthropic Console (pay per use)
+# and Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests".
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to heal
+        required: true
+        default: main
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+
+concurrency:
+  group: heal-${{ github.event.workflow_run.head_branch || inputs.branch }}
+  cancel-in-progress: false
+
+jobs:
+  heal:
+    # Only failed runs from this repository, and never a heal branch (no loops).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'failure' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       !startsWith(github.event.workflow_run.head_branch, 'heal/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BRANCH: ${{ github.event.workflow_run.head_branch || inputs.branch }}
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      FAILED_RUN_URL: ${{ github.event.workflow_run.html_url || format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || inputs.branch }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Reproduce the failure
+        id: repro
+        run: |
+          if npx playwright test; then
+            echo "reproduced=false" >> "$GITHUB_OUTPUT"
+            printf '## Heal\n\nThe failure did not reproduce on a second run, so it is probably flaky. Nothing to heal; look at the original run\x27s trace.\n' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "reproduced=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run the healer
+        if: steps.repro.outputs.reproduced == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          prompt: |
+            Use the e2e-healer agent on the tests that fail in test-results/results.json.
+            It must write .heal/report.json as its instructions describe. Do not commit, push
+            or open pull requests; a later step publishes the result.
+          claude_args: >-
+            --mcp-config .mcp.json
+            --allowedTools "Agent,Task,Read,Glob,Grep,LS,Edit,Write,mcp__playwright-test__*"
+            --max-turns 80
+
+      - name: Guard the healer's changes
+        if: steps.repro.outputs.reproduced == 'true'
+        run: node kit/heal/run-guard.ts
+
+      - name: Re-run the suite
+        if: steps.repro.outputs.reproduced == 'true'
+        run: npx playwright test || true
+
+      - name: Publish
+        if: steps.repro.outputs.reproduced == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node kit/heal/publish.ts --base "$BRANCH" --sha "$SHA" --run-url "$FAILED_RUN_URL" --run-id "${{ github.run_id }}"
+
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.repro.outputs.reproduced == 'true'
+        with:
+          name: heal-${{ github.run_id }}
+          path: |
+            .heal/
+            playwright-report/
+          include-hidden-files: true
+          retention-days: 14

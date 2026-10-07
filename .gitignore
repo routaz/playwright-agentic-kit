@@ -10,3 +10,6 @@ blob-report/
 
 # Playwright MCP scratch output (snapshots, logs) from agent runs
 .playwright-mcp/
+
+# Heal workflow scratch (report, guard result)
+.heal/
