@@ -8,7 +8,7 @@ Most "AI testing" demos either generate a pile of throwaway scripts or quietly s
 - **Agents are only as good as their context.** Each project describes its app and features in small, schema-validated YAML files: rules, journeys, risks, known issues. Agents read those instead of guessing from the DOM.
 - **The project-specific surface is tiny.** To point the kit at a new app you write one adapter (create a user, sign them in, seed data) and the context files. Everything else is reusable.
 
-> **Status:** Phase 4 of 5 done. The foundation runs green against the bundled demo app, the agents have planned and generated real tests, red tests can be healed behind a guard written in code, and every test is proven able to fail. Next: more adapters.
+> **Status:** All five phases done: a deterministic foundation, agents that plan, write and heal tests, a guard against dishonest healing, proof that every test can fail, and a ready-made Supabase adapter. It runs against the bundled demo app here, and against a real Supabase app with 77 tests.
 
 ## How it fits together
 
@@ -56,6 +56,7 @@ Node 22.18 or newer.
 | -------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `kit/config.ts`            | kit     | `defineKitConfig()`: pinned locale and timezone, service workers blocked, traces on failure, a JSON report for agents, optional mobile project, `E2E_BASE_URL` to retarget a run at staging |
 | `kit/fixtures.ts`          | kit     | `createKitTest(adapter)`: fresh `user` per test, `signedInPage`, `as(user)` for multi-account flows, `newUser()`, app `data` helpers, automatic cleanup                                     |
+| `kit/adapters/supabase/`   | kit     | Ready-made adapter for Supabase apps, plus database breaks for the mutation runner                                                                                                          |
 | `kit/adapters/types.ts`    | kit     | The adapter contract, the only code a new project must write                                                                                                                                |
 | `kit/context/`             | kit     | JSON schemas for app and feature context, plus `npm run context:check`                                                                                                                      |
 | `e2e/support/adapter.ts`   | project | Demo app adapter, seeding through test-only endpoints                                                                                                                                       |
@@ -160,6 +161,48 @@ The runner applies it, runs **only the tests covering that id**, and expects at 
 
 Its first run found a weak test, one written by hand: "a blank title adds nothing" passed even when the server saved blank titles, because it checked an empty list that was already empty before the server answered. The generator's instructions now cover that case.
 
+## Supabase apps
+
+For apps on Supabase Auth with supabase-js in the browser, [`kit/adapters/supabase`](kit/adapters/supabase/index.ts) is a ready-made adapter. A project only writes what's its own:
+
+```ts
+import { supabaseAdapter, type SupabaseAccount } from '../kit/adapters/supabase/index.ts';
+
+interface User extends SupabaseAccount {
+  username: string;
+}
+
+export const adapter = supabaseAdapter<User, { onboarded?: boolean }, { makeFriends(a: User, b: User): Promise<void> }>(
+  {
+    // Finish a new account the way the app's own signup does.
+    async setUp(account, options = {}, { apiAs }) {
+      const username = `e2e_${Math.random().toString(36).slice(2, 10)}`;
+      if (options.onboarded !== false) {
+        await apiAs(account, 'POST', '/rest/v1/rpc/complete_signup', { chosen_username: username });
+      }
+      return { username };
+    },
+    // App-specific helpers, built on the generic ones.
+    data: ({ apiAs }) => ({
+      async makeFriends(a, b) {
+        /* the app's own friend-request RPCs, through apiAs */
+      },
+    }),
+  },
+);
+```
+
+What the kit handles:
+
+- **Local only.** Keys come from `E2E_SUPABASE_*` variables or `supabase status`, and any host but localhost is refused, because tests create and delete accounts.
+- **Real users per test.** They're confirmed through the Auth admin API, set up through your `setUp`, and deleted afterwards, including any made through `data.createUser(options)`. A user a test deleted on purpose counts as cleaned up.
+- **Real sessions.** Sign-in puts a password-grant session where supabase-js keeps it, set once so sign-out tests stay honest.
+- **Checks below the UI.** `apiAs(user, method, path, body)` calls the API as a user, so you can check what RLS and RPC guards allow; `canSignIn(user)` tells you whether an account still exists; `sessionIn(page)` and `refreshTokenWorks(token)` let a test prove a sign-out really ended the session on the server.
+- **Clean-up after agents.** `sweepStaleTestUsers()` is a global setup that removes test users left behind by runs that never finished, such as an agent session that ended inside a seed.
+- **Database breaks for the mutation runner.** `kit/adapters/supabase/db.ts` has `dbFunction`, `dbDropIndex`, `dbDropConstraint` and `dbOpenPolicy`, plus `db()` to combine them. Each reads the object's real definition from the local stack and restores exactly that.
+
+It was extracted from a real project, where it backs 77 tests and 29 breaks, 13 of them in the database. That project's own adapter shrank from 265 lines to 71.
+
 ## Design decisions
 
 **Every test makes its own users.** No shared seed accounts, no global reset between tests. That keeps tests independent, lets them run fully in parallel against one backend, and means a test never fails because another one changed "its" data.
@@ -175,7 +218,7 @@ Its first run found a weak test, one written by hand: "a blank title adds nothin
 ## Using it for your own app
 
 1. Click **Use this template** on GitHub.
-2. Replace `e2e/support/adapter.ts` with your app's version: how to create a user, how to sign one in, any seeding helpers.
+2. Replace `e2e/support/adapter.ts` with your app's version: how to create a user, how to sign one in, any seeding helpers. On Supabase, start from `supabaseAdapter()` instead.
 3. Point `playwright.config.ts` at your app (`baseURL`, and `webServer` to start it).
 4. Rewrite `e2e/context/app.yaml` and add a `*.feature.yaml` per feature.
 5. Replace the seeds in `e2e/seeds/` with your app's starting states, then delete `examples/demo-app/` and the demo specs.
@@ -187,7 +230,7 @@ Its first run found a weak test, one written by hand: "a blank title adds nothin
 - [x] **Phase 2: Agents.** Planner, generator and healer as Claude Code subagents driving a real browser through Playwright MCP, all reading `e2e/context/`. First run: the planner found 4 coverage gaps in sign-in (including a sign-out test that only checked the UI, not the server), and the generator closed them. Each new test was checked by breaking the app on purpose; all four caught the break.
 - [x] **Phase 3: Healing.** `npm run heal` on a developer's own Claude login, plus an opt-in CI workflow that publishes a pull request and issues for real app bugs. Either way, a guard written in code rejects any repair that weakens a test.
 - [x] **Phase 4: Observability.** Context coverage report (strict in CI), a mutation runner that proves each test can fail by breaking the app on purpose, and context suggestions in the heal report.
-- [ ] **Phase 5: More adapters.** Ready-made adapters for common backends, such as Postgres with row-level security.
+- [x] **Phase 5: Adapters.** A ready-made Supabase adapter (accounts, sessions, checks below the UI, stale-user sweep, database breaks), extracted from a real project.
 
 ## Licence
 

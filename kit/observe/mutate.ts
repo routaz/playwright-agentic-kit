@@ -65,7 +65,12 @@ interface PwResult {
   errors?: { message?: string }[];
 }
 interface Suite {
-  specs?: { title: string; line: number; file: string; tests: { status: string }[] }[];
+  specs?: {
+    title: string;
+    line: number;
+    file: string;
+    tests: { status: string; results?: { status: string }[] }[];
+  }[];
   suites?: Suite[];
 }
 
@@ -96,7 +101,11 @@ function run(selected: ListedTest[]): string[] {
   const walk = (s: Suite) => {
     for (const spec of s.specs ?? []) {
       ran += spec.tests.length;
-      if (spec.tests.some((t) => t.status === 'unexpected')) failed.push(spec.title);
+      const bad = spec.tests.filter((t) => t.status === 'unexpected');
+      if (!bad.length) continue;
+      // A test timeout (not an assertion's) may be the break, or just a slow machine.
+      const timedOut = bad.every((t) => t.results?.some((r) => r.status === 'timedOut'));
+      failed.push(timedOut ? `${spec.title} (timed out)` : spec.title);
     }
     for (const c of s.suites ?? []) walk(c);
   };
@@ -183,7 +192,13 @@ for (const m of mutations) {
       }
       const failed = run(selected);
       const status: Status = failed.length ? 'caught' : 'survived';
-      results.push({ ...base, status, failed });
+      const onlyTimeouts = failed.length > 0 && failed.every((f) => f.endsWith('(timed out)'));
+      results.push({
+        ...base,
+        status,
+        failed,
+        note: onlyTimeouts ? 'caught only by test timeouts: check it is the break, not a slow run' : undefined,
+      });
       console.log(status === 'caught' ? `caught by ${failed.length}` : 'SURVIVED');
     } catch (e) {
       // The run broke (server didn't start, nothing ran): unknown, never "survived".
@@ -211,7 +226,7 @@ const md = [
     (r) =>
       `| ${icon[r.status]} | **${r.id}**: ${cell(r.description)} | ${r.covers.map((c) => `\`${c}\``).join(' ')} | ${r.tests} | ${
         r.status === 'caught'
-          ? `caught by ${r.failed.map((f) => `"${cell(f)}"`).join(', ')}`
+          ? `caught by ${r.failed.map((f) => `"${cell(f)}"`).join(', ')}${r.note ? ` ⚠️ ${cell(r.note)}` : ''}`
           : `${r.status}${r.note ? `: ${cell(r.note)}` : ''}`
       } |`,
   ),
