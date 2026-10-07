@@ -58,12 +58,12 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
 
-      - name: Reproduce the failure
+      - name: Reproduce the E2E failure
         id: repro
         run: |
           if npx playwright test; then
             echo "reproduced=false" >> "$GITHUB_OUTPUT"
-            printf '## Heal\n\nThe failure did not reproduce on a second run, so it is probably flaky. Nothing to heal; look at the original run\x27s trace.\n' >> "$GITHUB_STEP_SUMMARY"
+            printf '## Heal\n\nThe E2E suite passes on this commit, so there is nothing to heal. Either the failure was flaky (see the original run\x27s trace) or CI failed in another step, such as typecheck or unit tests.\n' >> "$GITHUB_STEP_SUMMARY"
           else
             echo "reproduced=true" >> "$GITHUB_OUTPUT"
           fi
