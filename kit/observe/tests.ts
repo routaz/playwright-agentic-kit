@@ -1,13 +1,17 @@
 // The project's tests and what each one covers, read from Playwright's list mode,
 // so nothing has to run.
 
-import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
+import { failure, npx } from '../run.ts';
 
 export interface ListedTest {
-  /** Path relative to the working directory, usable as a Playwright filter (`file:line`). */
+  /**
+   * Path relative to the working directory with forward slashes, usable as a Playwright
+   * filter (`file:line`). Playwright reads filters as regular expressions, so a Windows
+   * path like `e2e\specs` would turn into `\s` (whitespace) and match nothing.
+   */
   file: string;
   line: number;
   title: string;
@@ -31,15 +35,15 @@ export function listTests(): ListedTest[] {
   // a stray console.log in a spec) would corrupt it.
   const dir = mkdtempSync(join(tmpdir(), 'pw-list-'));
   const file = join(dir, 'list.json');
-  try {
-    execFileSync('npx', ['playwright', 'test', '--list', '--reporter=json'], {
-      stdio: 'ignore',
-      env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_FILE: file },
-    });
-  } catch {
-    // A non-zero exit still writes the report when listing works; checked below.
+  // A non-zero exit still writes the report when listing works; checked below.
+  const result = npx(['playwright', 'test', '--list', '--reporter=json'], {
+    stdio: ['ignore', 'ignore', 'pipe'],
+    maxBuffer: 64 * 1024 * 1024,
+    env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_FILE: file },
+  });
+  if (!existsSync(file)) {
+    throw new Error(`Listing the tests failed (${failure(result)}). Run \`npx playwright test --list\` to see why.`);
   }
-  if (!existsSync(file)) throw new Error('Listing the tests failed. Run `npx playwright test --list` to see why.');
   const report = JSON.parse(readFileSync(file, 'utf8')) as { config: { rootDir: string }; suites: Suite[] };
   rmSync(dir, { recursive: true, force: true });
   const out: ListedTest[] = [];
@@ -49,7 +53,7 @@ export function listTests(): ListedTest[] {
         const covers = t.annotations.filter((a) => a.type === 'covers' && a.description).map((a) => a.description!);
         const where = t.annotations.find((a) => a.location)?.location?.file ?? file ?? '';
         out.push({
-          file: relative(process.cwd(), where),
+          file: relative(process.cwd(), where).split(sep).join('/'),
           line: spec.line,
           title: spec.title,
           project: t.projectName,

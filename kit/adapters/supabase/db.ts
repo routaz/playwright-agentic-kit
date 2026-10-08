@@ -8,6 +8,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { inEolOf } from '../../eol.ts';
 
 type Part = { apply: () => void; undo: () => void };
 
@@ -43,9 +44,11 @@ export function dbFunction(name: string, find: string, replace: string): Part {
   return {
     apply() {
       original = query(`select pg_get_functiondef('public.${name}'::regproc)`);
-      const count = original.split(find).length - 1;
+      // Functions created from CRLF migration files keep CRLF in their source.
+      const target = inEolOf(original, find);
+      const count = original.split(target).length - 1;
       if (count !== 1) throw new Error(`'${find.slice(0, 40)}' occurs ${count} times in ${name}(), expected once`);
-      psql(original.replace(find, replace) + ';');
+      psql(original.replace(target, () => inEolOf(original, replace)) + ';');
     },
     undo() {
       if (original) psql(original + ';');

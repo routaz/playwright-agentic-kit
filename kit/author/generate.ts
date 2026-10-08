@@ -16,6 +16,7 @@ import { maxTurnsFrom, requireClaude, runAgent } from '../claude.ts';
 import { loadConfig } from '../heal/config.ts';
 import { checkDiff } from '../heal/guard.ts';
 import { diffTrees, restoreFrom, snapshotTree } from '../heal/snapshot.ts';
+import { npx } from '../run.ts';
 
 // The script's own name, so hints match the project (e.g. `generate` here, `e2e:generate` in an app).
 const self = process.env.npm_lifecycle_event ?? 'generate';
@@ -70,12 +71,12 @@ if (!specs.length) {
 }
 
 console.log(`\n\x1b[1mRunning ${specs.join(', ')}\x1b[0m`);
-const tests = spawnSync('npx', ['playwright', 'test', ...specs], { stdio: 'inherit' });
+const tests = npx(['playwright', 'test', ...specs], { stdio: 'inherit' });
 
 const coverage = spawnSync(process.execPath, [fileURLToPath(new URL('../observe/coverage.ts', import.meta.url))], {
   encoding: 'utf8',
 });
-const headline = coverage.stdout?.split('\n').find((l) => l.startsWith('**'));
+const headline = coverage.stdout?.split(/\r?\n/).find((l) => l.startsWith('**'));
 if (headline) console.log(`\nContext coverage: ${headline.replace(/\*\*/g, '')}`);
 
 console.log(

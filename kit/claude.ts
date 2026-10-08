@@ -2,16 +2,16 @@
 // developer's own login. Shared by `npm run plan`, `generate` and `heal`.
 // Settings (claudePath, model, maxTurns) come from heal.local.json.
 
-import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { CONFIG_FILE, type HealConfig } from './heal/config.ts';
+import { failure, run } from './run.ts';
 
 /** Exit with a helpful message unless Claude Code can be run; print which one is used. */
 export function requireClaude(config: HealConfig): void {
-  const version = spawnSync(config.claudePath, ['--version'], { encoding: 'utf8' });
+  const version = run(config.claudePath, ['--version']);
   if (version.status !== 0) {
     console.error(
-      `Can't run Claude Code at "${config.claudePath}". Install it, or set "claudePath" in ${CONFIG_FILE}` +
+      `Can't run Claude Code at "${config.claudePath}" (${failure(version)}). Install it, or set "claudePath" in ${CONFIG_FILE}` +
         ` (see heal.local.example.json) or the HEAL_CLAUDE_PATH environment variable.`,
     );
     process.exit(2);
@@ -31,23 +31,26 @@ export interface AgentRun {
   model?: string;
 }
 
-/** Run the agent with its output streamed to the terminal. Returns the CLI's exit code. */
-export function runAgent(config: HealConfig, run: AgentRun): number | null {
+/**
+ * Run the agent with its output streamed to the terminal. Returns the CLI's exit code.
+ * The prompt goes in on stdin, never the command line, so on Windows it can't be
+ * mangled by cmd.exe whatever it contains.
+ */
+export function runAgent(config: HealConfig, agent: AgentRun): number | null {
   const args = [
     '-p',
-    run.prompt,
     '--agent',
-    run.agent,
+    agent.agent,
     '--mcp-config',
     '.mcp.json',
     '--strict-mcp-config',
     '--allowedTools',
-    run.tools,
+    agent.tools,
     '--max-turns',
-    String(run.maxTurns),
-    ...(run.model ? ['--model', run.model] : []),
+    String(agent.maxTurns),
+    ...(agent.model ? ['--model', agent.model] : []),
   ];
-  return spawnSync(config.claudePath, args, { stdio: 'inherit' }).status;
+  return run(config.claudePath, args, { input: agent.prompt, stdio: ['pipe', 'inherit', 'inherit'] }).status;
 }
 
 /** `--max-turns` from the command line, else the configured value. */

@@ -9,11 +9,12 @@
 // restored after each mutation, on Ctrl-C, and at the start of the next run if a
 // previous one was killed.
 
-import { spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import { inEolOf } from '../eol.ts';
+import { failure, npx } from '../run.ts';
 import type { Mutation } from './mutations.ts';
 import { listTests, uniqueTests, type ListedTest } from './tests.ts';
 
@@ -82,8 +83,7 @@ interface Suite {
 function run(selected: ListedTest[]): string[] {
   mkdirSync('.mutate', { recursive: true });
   rmSync(RESULTS, { force: true });
-  spawnSync(
-    'npx',
+  const result = npx(
     [
       'playwright',
       'test',
@@ -92,9 +92,13 @@ function run(selected: ListedTest[]): string[] {
       '--reporter=json',
       '--retries=0',
     ],
-    { stdio: 'ignore', env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_FILE: RESULTS, E2E_FRESH_SERVER: '1' } },
+    {
+      stdio: ['ignore', 'ignore', 'pipe'],
+      maxBuffer: 64 * 1024 * 1024,
+      env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_FILE: RESULTS, E2E_FRESH_SERVER: '1' },
+    },
   );
-  if (!existsSync(RESULTS)) throw new Error('The test run produced no results.');
+  if (!existsSync(RESULTS)) throw new Error(`The test run produced no results (${failure(result)}).`);
   const report = JSON.parse(readFileSync(RESULTS, 'utf8')) as PwResult;
   const failed: string[] = [];
   let ran = 0;
@@ -160,7 +164,7 @@ for (const m of mutations) {
   let stale: string | undefined;
   for (const e of m.edits ?? []) {
     const content = originals[e.file] ?? (existsSync(e.file) ? readFileSync(e.file, 'utf8') : undefined);
-    const count = content?.split(e.find).length ?? 0;
+    const count = content?.split(inEolOf(content, e.find)).length ?? 0;
     if (content === undefined) stale = `${e.file} doesn't exist`;
     else if (count - 1 !== 1) stale = `"${e.find.slice(0, 40)}" occurs ${count - 1} times in ${e.file}, expected once`;
     if (stale) break;
@@ -177,7 +181,8 @@ for (const m of mutations) {
   try {
     const current = { ...originals };
     for (const e of m.edits ?? []) {
-      current[e.file] = current[e.file].replace(e.find, e.replace);
+      const content = current[e.file];
+      current[e.file] = content.replace(inEolOf(content, e.find), () => inEolOf(content, e.replace));
       writeFileSync(e.file, current[e.file]);
     }
     pendingUndo = m.undo;

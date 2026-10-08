@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { parseUnifiedDiff, type FileChange } from './guard.ts';
 
 export function snapshotTree(): string {
@@ -37,6 +38,6 @@ export function restoreFrom(tree: string, files: FileChange[]): void {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   console.log(snapshotTree());
 }
