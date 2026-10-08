@@ -1,4 +1,5 @@
-// Per-developer settings for `npm run heal`, read from heal.local.json (git-ignored).
+// Per-developer settings for the agent commands (`npm run plan`, `generate`, `heal`),
+// read from heal.local.json (git-ignored).
 // Each developer heals with their own signed-in Claude Code, so no shared token is needed.
 
 import { existsSync, readFileSync } from 'node:fs';

@@ -29,7 +29,9 @@
     "example:coverage": "cd examples/supabase-app && node ../../kit/context/check.ts && node ../../kit/observe/coverage.ts",
     "example:mutate": "cd examples/supabase-app && node ../../kit/observe/mutate.ts",
     "demo:capture": "node docs/demo/capture.mjs",
-    "demo:build": "node docs/demo/build.mjs"
+    "demo:build": "node docs/demo/build.mjs",
+    "plan": "node kit/author/plan.ts",
+    "generate": "node kit/author/generate.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

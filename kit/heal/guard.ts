@@ -71,7 +71,7 @@ export function checkDiff(files: FileChange[], options: GuardOptions = { allowed
 
   for (const f of files) {
     if (!options.allowed.some((p) => f.path.startsWith(p))) {
-      violations.push(`${f.path}: outside the healer's area (${options.allowed.join(', ')})`);
+      violations.push(`${f.path}: outside the agents' area (${options.allowed.join(', ')})`);
       continue;
     }
     if (f.status === 'deleted') {

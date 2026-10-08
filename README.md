@@ -53,6 +53,22 @@ npm run demo        # the demo app on http://localhost:4173 (demo@example.com / 
 
 Node 22.18 or newer.
 
+### The whole loop from a terminal
+
+The agent commands run Claude Code headlessly with **your own login** (install the `claude` CLI and sign in once). Everything else is plain Node and Playwright.
+
+| Step                        | Command                                                                 | Uses Claude       |
+| --------------------------- | ----------------------------------------------------------------------- | ----------------- |
+| Describe a feature          | edit `e2e/context/<feature>.feature.yaml`, then `npm run context:check` | no                |
+| Plan it                     | `npm run plan -- <feature>`                                             | yes               |
+| Review the plan             | read `e2e/plans/<feature>.plan.md`                                      | no, a person does |
+| Generate the tests          | `npm run generate -- e2e/plans/<feature>.plan.md [--only "1.1-1.5"]`    | yes               |
+| Run them                    | `npm test`                                                              | no                |
+| Prove them                  | `npm run coverage` and `npm run mutate`                                 | no                |
+| Repair them when they break | `npm run heal`                                                          | yes               |
+
+The agent commands share one safety rail: the working tree is snapshotted first, and what the agent changed is checked by code afterwards. The planner may only write plans. The generator and healer go through the guard, so a skipped test, a weakened assertion or an edit outside the test folders undoes all their changes. Your own uncommitted work is never touched. Settings (path to `claude`, model, turn limit) go in a git-ignored `heal.local.json`; `--max-turns` overrides the limit for one run.
+
 ## What's in the box
 
 | Path                       | Owner   | What it does                                                                                                                                                                                |
@@ -88,7 +104,7 @@ Agents start from **seeds** (`e2e/seeds/`), small tests that put the browser in 
 
 Every test carries a `covers` annotation (`errands#private-lists`, `errands#edge:long-title`) pointing at an id in the context file, so coverage can be traced from rule to test and back.
 
-Try it: open this folder in Claude Code, approve the `playwright-test` MCP server, and ask _"Use the e2e-planner agent to plan sign-in."_ [`CLAUDE.md`](CLAUDE.md) describes the full loop.
+Try it: `npm run plan -- sign-in` from a terminal, or open this folder in Claude Code, approve the `playwright-test` MCP server, and ask _"Use the e2e-planner agent to plan sign-in."_ [`CLAUDE.md`](CLAUDE.md) describes the full loop.
 
 ## Healing
 

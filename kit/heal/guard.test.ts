@@ -34,7 +34,7 @@ describe('heal guard', () => {
   test('rejects edits outside the allowed folders', () => {
     const r = checkDiff([spec(['a'], ['b'], 'e2e/context/errands.feature.yaml'), spec(['a'], ['b'], 'src/app.js')]);
     assert.equal(r.violations.length, 2);
-    assert.match(r.violations[0], /outside the healer's area/);
+    assert.match(r.violations[0], /outside the agents' area/);
   });
 
   test('rejects deleting a spec', () => {

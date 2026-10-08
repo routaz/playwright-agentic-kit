@@ -306,6 +306,16 @@ ${table(
       '<code>kit/observe/mutate.ts</code> + <code>e2e/mutations.ts</code>',
       'Break the app on purpose; check the tests fail',
     ],
+    [
+      '<code>npm run plan -- &lt;feature&gt;</code>',
+      '<code>kit/author/plan.ts</code>',
+      'Run the planner agent headlessly; only plans may change',
+    ],
+    [
+      '<code>npm run generate -- &lt;plan&gt;</code>',
+      '<code>kit/author/generate.ts</code>',
+      'Run the generator agent headlessly, behind the guard; run the new tests',
+    ],
     ['<code>npm run heal</code>', '<code>kit/heal/local.ts</code>', 'Run the healer agent locally, behind the guard'],
     ['<code>npm run check</code>', 'several', 'Typecheck, format, context, unit tests, leak check'],
     ['<code>npm run demo</code>', '<code>examples/demo-app/server.mjs</code>', 'The demo app on port 4173'],
@@ -449,6 +459,7 @@ ${table(
     ],
   ],
 )}
+<p><strong>Running them.</strong> In a Claude Code session, ask for an agent by name. From a terminal, <code>npm run plan</code>, <code>generate</code> and <code>heal</code> run them headlessly through the <code>claude</code> CLI with your own login (<code>kit/claude.ts</code>). All three snapshot the working tree first and check what the agent changed afterwards: the planner may only write plans, and the generator and healer go through the guard (section 7), which undoes all their changes on a violation.</p>
 <p><strong>Seeds</strong> (<code>e2e/seeds/</code>) are tiny tests that put the browser in a known state: signed out, signed in with an empty list, signed in with data. An agent starts from a seed, and because seeds also run as smoke tests, a broken seed fails CI instead of confusing an agent.</p>
 <p>The healer's classification is the heart of honest healing:</p>
 ${table(

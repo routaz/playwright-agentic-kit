@@ -12,7 +12,8 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { parseArgs } from 'node:util';
-import { CONFIG_FILE, loadConfig } from './config.ts';
+import { requireClaude, runAgent } from '../claude.ts';
+import { loadConfig } from './config.ts';
 import { reportIssues } from './github.ts';
 import { checkDiff } from './guard.ts';
 import { parseReport, summariseRun } from './report.ts';
@@ -26,18 +27,7 @@ function runSuite(): boolean {
   return spawnSync('npx', ['playwright', 'test'], { stdio: 'inherit' }).status === 0;
 }
 
-// 0. Is Claude Code reachable?
-const version = spawnSync(config.claudePath, ['--version'], { encoding: 'utf8' });
-if (version.status !== 0) {
-  console.error(
-    `Can't run Claude Code at "${config.claudePath}". Install it, or set "claudePath" in ${CONFIG_FILE}` +
-      ` (see heal.local.example.json) or the HEAL_CLAUDE_PATH environment variable.`,
-  );
-  process.exit(2);
-}
-console.log(
-  `Using Claude Code ${version.stdout.trim()}${existsSync(CONFIG_FILE) ? ` (settings: ${CONFIG_FILE})` : ''}`,
-);
+requireClaude(config);
 
 step(1, 'Running the E2E suite');
 if (runSuite()) {
@@ -51,22 +41,15 @@ rmSync('.heal', { recursive: true, force: true });
 mkdirSync('.heal');
 
 step(3, `Running the e2e-healer agent (max ${config.maxTurns} turns${config.model ? `, model ${config.model}` : ''})`);
-const args = [
-  '-p',
-  'Heal the tests that fail in test-results/results.json. Write .heal/report.json as your instructions describe. Do not commit.',
-  '--agent',
-  'e2e-healer',
-  '--mcp-config',
-  '.mcp.json',
-  '--strict-mcp-config',
-  '--allowedTools',
-  'Read,Glob,Grep,LS,Edit,Write,mcp__playwright-test__*',
-  '--max-turns',
-  String(config.maxTurns),
-  ...(config.model ? ['--model', config.model] : []),
-];
-const healer = spawnSync(config.claudePath, args, { stdio: 'inherit' });
-if (healer.status !== 0) console.warn(`\nThe healer exited with code ${healer.status}. Checking what it left behind.`);
+const healerStatus = runAgent(config, {
+  agent: 'e2e-healer',
+  prompt:
+    'Heal the tests that fail in test-results/results.json. Write .heal/report.json as your instructions describe. Do not commit.',
+  tools: 'Read,Glob,Grep,LS,Edit,Write,mcp__playwright-test__*',
+  maxTurns: config.maxTurns,
+  model: config.model || undefined,
+});
+if (healerStatus !== 0) console.warn(`\nThe healer exited with code ${healerStatus}. Checking what it left behind.`);
 
 step(4, 'Guarding its changes');
 const changes = diffTrees(before, snapshotTree());

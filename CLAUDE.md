@@ -12,9 +12,9 @@ with a human reviewing each step. They use the Playwright MCP server from `.mcp.
 ## The loop
 
 1. A human writes or updates `e2e/context/<feature>.feature.yaml`. Run `npm run context:check`.
-2. **Plan:** "Use the e2e-planner agent to plan <feature>." A human reads the plan and its
+2. **Plan:** `npm run plan -- <feature>`, or "Use the e2e-planner agent to plan <feature>." A human reads the plan and its
    Findings. A finding is either an app bug or stale context; resolve it before generating.
-3. **Generate:** "Use the e2e-generator agent to implement e2e/plans/<feature>.plan.md."
+3. **Generate:** `npm run generate -- e2e/plans/<feature>.plan.md`, or "Use the e2e-generator agent to implement e2e/plans/<feature>.plan.md."
 4. **Review:** run `npm run check && npm test` and review the diff like any pull request.
 5. **Heal** when tests go red: "Use the e2e-healer agent on the failing tests." It fixes only
    failures where the test is wrong, and reports app bugs and context drift without touching them.
