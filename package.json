@@ -22,7 +22,8 @@
     "test:unit": "node --test \"kit/**/*.test.ts\"",
     "heal": "node kit/heal/local.ts",
     "coverage": "node kit/observe/coverage.ts",
-    "mutate": "node kit/observe/mutate.ts"
+    "mutate": "node kit/observe/mutate.ts",
+    "guide": "node docs/guide/build.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

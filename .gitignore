@@ -25,3 +25,6 @@ reports/
 
 # Mutation runner journal (restores files if a run is killed)
 .mutate/
+
+# Generated alongside the guide PDF
+docs/guide/*.html

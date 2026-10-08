@@ -10,6 +10,8 @@ Most "AI testing" demos either generate a pile of throwaway scripts or quietly s
 
 > **Status:** All five phases done: a deterministic foundation, agents that plan, write and heal tests, a guard against dishonest healing, proof that every test can fail, and a ready-made Supabase adapter. It runs against the bundled demo app here, and against a real Supabase app with 77 tests.
 
+**New here?** [The guide to the code (PDF)](docs/guide/playwright-agentic-kit-guide.pdf) walks through every part: entry points, the core fixtures, context files, the agents, the healing guard, coverage and mutation testing, and the Supabase adapter. Rebuild it with `npm run guide`; its code excerpts are read from the source, so it fails to build if it goes stale.
+
 ## How it fits together
 
 ```mermaid
