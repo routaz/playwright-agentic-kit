@@ -31,12 +31,21 @@ export class ErrandsPage {
     return this.page.getByRole('checkbox', { name: title });
   }
 
+  /** Elements of the given tag rendered inside the list; used to prove titles are not parsed as HTML. */
+  renderedElements(tag: string): Locator {
+    return this.list.locator(tag);
+  }
+
+  deleteButton(title: string): Locator {
+    return this.page.getByRole('button', { name: `Delete ${title}` });
+  }
+
   async addErrand(title: string) {
     await this.newErrand.fill(title);
     await this.add.click();
   }
 
   async remove(title: string) {
-    await this.page.getByRole('button', { name: `Delete ${title}` }).click();
+    await this.deleteButton(title).click();
   }
 }

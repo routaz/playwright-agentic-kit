@@ -94,4 +94,28 @@ export default defineMutations([
       },
     ],
   },
+  {
+    id: 'titles-rendered-as-html',
+    covers: 'errands#edge:html-title',
+    description: 'errand titles are rendered as HTML instead of text',
+    edits: [
+      {
+        file: APP,
+        find: "h('label', { for: `e-${e.id}` }, e.title),",
+        replace: "Object.assign(h('label', { for: `e-${e.id}` }), { innerHTML: e.title }),",
+      },
+    ],
+  },
+  {
+    id: 'long-titles-overflow',
+    covers: 'errands#edge:long-title',
+    description: 'long titles no longer wrap, so the page scrolls sideways',
+    edits: [
+      {
+        file: 'examples/demo-app/public/style.css',
+        find: '  min-width: 0;\n  overflow-wrap: anywhere;\n',
+        replace: '',
+      },
+    ],
+  },
 ]);
