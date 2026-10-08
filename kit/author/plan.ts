@@ -81,7 +81,15 @@ if (!plan || plan === previous) {
   process.exit(1);
 }
 
-const scenarios = plan.split('\n').filter((l) => /^#{3,4} \d+\.\d+/.test(l));
+// One entry per scenario number: the save tool sometimes appends its own copy of a section.
+const scenarios = [
+  ...new Map(
+    plan
+      .split('\n')
+      .filter((l) => /^#{3,4} \d+\.\d+/.test(l))
+      .map((l) => [/\d+\.\d+/.exec(l)![0], l] as const),
+  ).values(),
+];
 const findings = /## Findings\s*\n([\s\S]*?)(?=\n## |$)/.exec(plan)?.[1].trim();
 console.log(`\n\x1b[1mPlan summary\x1b[0m: ${planFile}`);
 console.log(`  ${scenarios.length} scenario(s)`);

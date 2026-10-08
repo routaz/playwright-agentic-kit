@@ -53,7 +53,8 @@ it under **Findings** with what the rule says and what you observed.
 Save with `planner_save_plan` to `e2e/plans/<feature>.plan.md`. The tool has its own idea of a
 plan's layout; follow this one instead. Every scenario goes in the one spec file
 `e2e/specs/<feature>.spec.ts`, never a file per scenario, and the Coverage table and Findings
-come first:
+come first. If the tool adds its own "Test Scenarios" section at the end, rewrite the plan so it
+contains your scenarios once:
 
 ```markdown
 # <Feature> test plan
