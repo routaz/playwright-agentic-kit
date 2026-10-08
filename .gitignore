@@ -28,3 +28,4 @@ reports/
 
 # Generated alongside the guide PDF
 docs/guide/*.html
+docs/demo/player.html

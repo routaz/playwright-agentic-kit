@@ -27,13 +27,17 @@
     "example:supabase": "cd examples/supabase-app && supabase start",
     "example:test": "cd examples/supabase-app && playwright test",
     "example:coverage": "cd examples/supabase-app && node ../../kit/context/check.ts && node ../../kit/observe/coverage.ts",
-    "example:mutate": "cd examples/supabase-app && node ../../kit/observe/mutate.ts"
+    "example:mutate": "cd examples/supabase-app && node ../../kit/observe/mutate.ts",
+    "demo:capture": "node docs/demo/capture.mjs",
+    "demo:build": "node docs/demo/build.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@supabase/supabase-js": "^2.117.3",
     "@types/node": "^26.6.4",
     "ajv": "^8.20.0",
+    "gifenc": "^1.0.3",
+    "pngjs": "^7.0.0",
     "prettier": "^3.9.9",
     "supabase": "^2.120.0",
     "typescript": "^7.0.2",

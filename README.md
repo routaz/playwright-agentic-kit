@@ -10,35 +10,36 @@ Most "AI testing" demos either generate a pile of throwaway scripts or quietly s
 
 > **Status:** All five phases done: a deterministic foundation, agents that plan, write and heal tests, a guard against dishonest healing, proof that every test can fail, and a ready-made Supabase adapter. It runs against the bundled demo app here, and against a real Supabase app with 77 tests.
 
+![From context to proof: people describe the rules, agents plan and write the tests, CI runs plain Playwright, and the app is broken on purpose to prove every test can fail](docs/demo/demo.gif)
+
+<sub>Every line in this recording is real: excerpts from this repository and output captured by running the commands (<code>npm run demo:capture</code>, <code>npm run demo:build</code>).</sub>
+
 **New here?** [The guide to the code (PDF)](docs/guide/playwright-agentic-kit-guide.pdf) walks through every part: entry points, the core fixtures, context files, the agents, the healing guard, coverage and mutation testing, and the Supabase adapter. Rebuild it with `npm run guide`; its code excerpts are read from the source, so it fails to build if it goes stale.
 
 ## How it fits together
 
 ```mermaid
-flowchart LR
-  subgraph Project["Your project (e2e/)"]
-    CTX["context/*.yaml<br/>app + feature context"]
-    AD["support/adapter.ts<br/>users · sign-in · seeding"]
-    SPECS["specs/*.spec.ts<br/>pages/*.ts"]
-  end
-  subgraph Kit["Kit (kit/)"]
-    CFG["defineKitConfig()"]
-    FX["createKitTest()<br/>user · as() · data fixtures"]
-    SCH["context schemas<br/>+ validator"]
-  end
-  subgraph Agents["Agents (.claude/agents)"]
-    PL["planner"] --> GEN["generator"]
-    HEAL["healer"]
-  end
-  CTX --> SCH
-  CTX --> PL
-  AD --> FX
-  FX --> SPECS
-  GEN -- "PR with new specs" --> SPECS
-  HEAL -- "PR with proposed fix" --> SPECS
-  SPECS --> CI["CI: plain Playwright run"]
-  CI -- "results.json on failure" --> HEAL
+flowchart TD
+  CTX["<b>Context</b><br/>e2e/context/*.yaml<br/>rules · journeys · edge cases"]:::person
+  PLAN["<b>Planner agent</b><br/>plans only what isn't tested yet"]:::agent
+  REVIEW["<b>Review</b><br/>a person checks the plan"]:::person
+  GEN["<b>Generator agent</b><br/>writes specs + page objects"]:::agent
+  CI["<b>CI: plain Playwright</b><br/>no AI at run time"]:::code
+  PROVE["<b>Prove the tests</b><br/>coverage + mutation check"]:::code
+  HEAL["<b>Healer agent</b><br/>classifies each failure"]:::agent
+  GUARD["<b>Guard</b><br/>code that rejects weakened tests"]:::code
+  PR["<b>Pull request + issues</b><br/>a person reviews"]:::person
+
+  CTX --> PLAN --> REVIEW --> GEN --> CI
+  CI -- green --> PROVE
+  CI -- red --> HEAL --> GUARD --> PR
+
+  classDef person fill:#dbeafe,stroke:#2563eb,color:#0f172a
+  classDef agent fill:#ede9fe,stroke:#7c3aed,color:#0f172a
+  classDef code fill:#e5e7eb,stroke:#4b5563,color:#0f172a
 ```
+
+Blue: people decide. Purple: agents propose. Grey: deterministic code checks. Which folder holds what is in [What's in the box](#whats-in-the-box).
 
 ## Quick start
 
