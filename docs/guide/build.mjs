@@ -551,7 +551,11 @@ ${src('kit/adapters/supabase/index.ts', '    async signIn(context, user, ctx)', 
 <p>The <code>data</code> fixture also gets helpers for checking below the UI: <code>apiAs(user, method, path, body)</code> calls the API as that user, to prove what row-level security and database functions allow; <code>canSignIn(user)</code> says whether an account still exists; <code>sessionIn(page)</code> and <code>refreshTokenWorks(token)</code> prove a sign-out ended the session on the server. Checking a refresh token uses it up (Supabase rotates them), so check only after the action under test.</p>
 ${h3('sb-db', '9.3 Database breaks')}
 ${src('kit/adapters/supabase/db.ts', 'export function dbFunction')}
-<p>Each helper reads the object's real definition from the local database at the moment it applies, and restores exactly that, so it never works from a stale copy. <code>db()</code> combines several breaks, undone in reverse; that's how a rule enforced twice (for example a function check plus a table constraint) is broken in both places at once.</p>
+<p><code>dbSql(apply, undo)</code> covers anything else, such as replacing a policy with a looser one. Each helper reads the object's real definition from the local database at the moment it applies, and restores exactly that, so it never works from a stale copy. <code>db()</code> combines several breaks, undone in reverse; that's how a rule enforced twice (for example a function check plus a table constraint) is broken in both places at once.</p>
+${h3('sb-example', '9.4 The Supabase example')}
+<p><code>examples/supabase-app</code> runs the adapter against a real local Supabase stack in this repository's own CI: a notes app whose rules live in the database. Its whole adapter:</p>
+${src('examples/supabase-app/e2e/support/adapter.ts', 'export const adapter = supabaseAdapter')}
+${note('Row-level security, twice', 'A break that only loosened the delete policy survived: in Postgres a <code>DELETE ... WHERE</code> must also pass the read policy, because the <code>WHERE</code> clause reads the row. The rule was enforced twice, so the break has to loosen both. When a break survives, look for a second layer before blaming the test.')}
 `);
 
 // --- 10. CI -----------------------------------------------------------------------
@@ -608,8 +612,12 @@ const qa = [
     'The journal on disk holds the original file contents; the next run restores them before doing anything else. Database breaks restore from definitions read at apply time.',
   ],
   [
+    'How do you know the Supabase adapter works outside one project?',
+    'The repository has its own Supabase example (<code>examples/supabase-app</code>): a notes app with row-level security, an onboarding function and constraints. CI starts its local stack and runs its tests, coverage and seven database and app breaks on every push.',
+  ],
+  [
     'What would you improve next?',
-    'An example Supabase project in this repository so the adapter has its own CI, a combined dashboard of coverage and mutation results over time, and a planner prompt that also proposes the matching breaks for <code>e2e/mutations.ts</code>.',
+    'A combined dashboard of coverage and mutation results over time, and a planner prompt that also proposes the matching breaks for <code>e2e/mutations.ts</code>, so every new rule arrives with a test and a proof that the test can fail.',
   ],
 ];
 body.push(`

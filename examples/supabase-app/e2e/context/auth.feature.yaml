@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../../../../kit/context/feature.schema.json
+feature: auth
+summary: Signing in with email and password, and signing out.
+risk: high
+entry: /
+personas: [visitor, member]
+rules:
+  - id: generic-error
+    rule: A failed sign-in shows the same message whether the account exists or not
+  - id: sign-out-ends-session
+    rule: Signing out ends the session on the server, not only in the browser
+journeys:
+  - id: sign-in
+    name: Sign in
+    priority: critical
+    persona: visitor
+    steps:
+      - Enter email and password
+      - Press "Sign in"
+    expect:
+      - The notes list shows
+  - id: sign-out
+    name: Sign out
+    priority: important
+    persona: member
+    steps:
+      - Press "Sign out"
+    expect:
+      - The sign-in form shows, also after a reload

@@ -89,6 +89,11 @@ export function dbOpenPolicy(table: string): Part {
   };
 }
 
+/** Any SQL break with its exact undo, e.g. replacing a policy with a looser one. */
+export function dbSql(apply: string, undo: string): Part {
+  return { apply: () => psql(apply), undo: () => psql(undo) };
+}
+
 /** Several database breaks as one: applied in order, undone in reverse. */
 export function db(...parts: Part[]): Part {
   return {

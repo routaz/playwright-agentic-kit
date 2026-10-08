@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=../../../../kit/context/feature.schema.json
+feature: onboarding
+summary: Choosing a username once, before the notes can be used.
+risk: high
+entry: /
+personas: [new-member]
+rules:
+  - id: gate
+    rule: An account without a username sees only the onboarding form
+  - id: username-shape
+    rule: Usernames are 3 to 20 characters of a-z, 0-9 and underscore
+  - id: unique-username
+    rule: Two people can't have the same username
+journeys:
+  - id: choose-username
+    name: Choose a username
+    priority: critical
+    persona: new-member
+    steps:
+      - Type a username
+      - Press "Continue"
+    expect:
+      - The notes list shows, greeting the person by username
+edge_cases:
+  - id: username-case
+    case: A username typed with capitals is stored lowercase

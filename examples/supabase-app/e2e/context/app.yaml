@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=../../../../kit/context/app.schema.json
+app: Notes
+purpose: >
+  A small private notebook, built to show the kit against a real Supabase backend.
+  People create an account, choose a username once, then keep notes only they can read.
+stack:
+  - Plain JavaScript single-page app using supabase-js in the browser
+  - Supabase Auth, Postgres with row-level security, a SECURITY DEFINER onboarding function
+personas:
+  - id: visitor
+    description: Not signed in.
+  - id: new-member
+    description: Has an account but hasn't chosen a username yet.
+  - id: member
+    description: Signed in with a username.
+conventions:
+  locators:
+    - getByRole with the accessible name
+    - getByLabel for form fields
+  data:
+    - Every test makes its own users through the user, newUser or data fixtures
+    - Prove privacy rules through the API with data.apiAs, not only through the page
+  avoid:
+    - Fixed waits; rely on web-first assertions
+    - Asserting on other tests' data
+untestable:
+  - Email confirmation (turned off in the local config)

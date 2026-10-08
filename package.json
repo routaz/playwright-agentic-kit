@@ -23,13 +23,19 @@
     "heal": "node kit/heal/local.ts",
     "coverage": "node kit/observe/coverage.ts",
     "mutate": "node kit/observe/mutate.ts",
-    "guide": "node docs/guide/build.mjs"
+    "guide": "node docs/guide/build.mjs",
+    "example:supabase": "cd examples/supabase-app && supabase start",
+    "example:test": "cd examples/supabase-app && playwright test",
+    "example:coverage": "cd examples/supabase-app && node ../../kit/context/check.ts && node ../../kit/observe/coverage.ts",
+    "example:mutate": "cd examples/supabase-app && node ../../kit/observe/mutate.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "@supabase/supabase-js": "^2.117.3",
     "@types/node": "^26.6.4",
     "ajv": "^8.20.0",
     "prettier": "^3.9.9",
+    "supabase": "^2.120.0",
     "typescript": "^7.0.2",
     "yaml": "^2.9.1"
   }

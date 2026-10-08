@@ -101,3 +101,46 @@ jobs:
       # covering each break fail. Proves the tests, the agents' included, can fail.
       - name: Break the app on purpose
         run: npm run mutate
+
+  supabase-example:
+    name: Supabase example
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      checks: write # dorny/test-reporter publishes its results as check runs
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      # The example's own local stack: database, API and auth only (see its config.toml).
+      - name: Start the example's Supabase
+        run: npm run example:supabase
+
+      - name: E2E tests against real Supabase
+        run: npm run example:test
+
+      - name: Context coverage
+        if: ${{ !cancelled() }}
+        run: npm run example:coverage -- --strict
+
+      # Row-level security, constraints and functions broken on purpose; the tests must notice.
+      - name: Break the app and its database on purpose
+        run: npm run example:mutate
+
+      - name: Report Supabase example tests
+        if: ${{ !cancelled() }}
+        uses: dorny/test-reporter@v3
+        with:
+          name: Supabase example results
+          path: examples/supabase-app/test-results/junit.xml
+          reporter: java-junit
+          use-actions-summary: false
+          fail-on-empty: false

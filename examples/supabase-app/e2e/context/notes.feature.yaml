@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=../../../../kit/context/feature.schema.json
+feature: notes
+summary: Adding, keeping and deleting private notes.
+risk: high
+entry: /
+personas: [member]
+rules:
+  - id: private-notes
+    rule: A person only ever sees their own notes, in the page or through the API
+  - id: delete-own-only
+    rule: Nobody can delete someone else's note
+  - id: no-blank-notes
+    rule: Blank notes are never saved
+journeys:
+  - id: add-note
+    name: Add a note
+    priority: critical
+    persona: member
+    steps:
+      - Type into "New note"
+      - Press "Add"
+    expect:
+      - The note shows, and is still there after a reload
+  - id: delete-note
+    name: Delete a note
+    priority: important
+    persona: member
+    steps:
+      - Press the delete button on a note
+    expect:
+      - The note is gone, also after a reload

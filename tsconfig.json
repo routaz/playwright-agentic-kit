@@ -9,5 +9,11 @@
     "allowImportingTsExtensions": true,
     "types": ["node"]
   },
-  "include": ["kit", "e2e", "playwright.config.ts"]
+  "include": [
+    "kit",
+    "e2e",
+    "playwright.config.ts",
+    "examples/supabase-app/e2e",
+    "examples/supabase-app/playwright.config.ts"
+  ]
 }

@@ -203,6 +203,8 @@ What the kit handles:
 - **Clean-up after agents.** `sweepStaleTestUsers()` is a global setup that removes test users left behind by runs that never finished, such as an agent session that ended inside a seed.
 - **Database breaks for the mutation runner.** `kit/adapters/supabase/db.ts` has `dbFunction`, `dbDropIndex`, `dbDropConstraint` and `dbOpenPolicy`, plus `db()` to combine them. Each reads the object's real definition from the local stack and restores exactly that.
 
+**See it run:** [`examples/supabase-app`](examples/supabase-app) is a small notes app on a real local Supabase stack, with row-level security, an onboarding function and database constraints. CI starts the stack and runs its 13 tests, coverage and 7 database and app breaks on every push.
+
 It was extracted from a real project, where it backs 77 tests and 29 breaks, 13 of them in the database. That project's own adapter shrank from 265 lines to 71.
 
 ## Design decisions
