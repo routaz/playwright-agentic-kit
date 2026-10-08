@@ -2,25 +2,24 @@
 // Needs the example's Supabase running (npm run example:supabase).
 // Run: npm run demo:capture, then npm run demo:build.
 
-import { spawnSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { run } from '../../kit/run.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
 
 function capture(script) {
-  const r = spawnSync('npm', ['run', '--silent', script], {
+  const r = run('npm', ['run', '--silent', script], {
     cwd: ROOT,
-    encoding: 'utf8',
     env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' },
     maxBuffer: 64 * 1024 * 1024,
   });
   if (r.status !== 0) throw new Error(`npm run ${script} failed:\n${r.stdout}\n${r.stderr}`);
   return r.stdout
     .replace(/\x1b\[[0-9;]*m/g, '')
-    .split('\n')
+    .split(/\r?\n/)
     .filter((l) => l.trim() && !l.startsWith('npm notice') && !l.startsWith('[WebServer]'));
 }
 

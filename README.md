@@ -51,7 +51,7 @@ npm run test:ui     # Playwright's UI mode
 npm run demo        # the demo app on http://localhost:4173 (demo@example.com / demo-password)
 ```
 
-Node 22.18 or newer.
+Node 22.18 or newer, on macOS, Linux or Windows. CI runs the full loop on all three.
 
 ### The whole loop from a terminal
 

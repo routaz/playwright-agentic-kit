@@ -1,6 +1,6 @@
 // Where the Supabase project is, and the guard that keeps tests away from hosted ones.
 
-import { execFileSync } from 'node:child_process';
+import { failure, npx } from '../../run.ts';
 
 export interface SupabaseKeys {
   url: string;
@@ -38,18 +38,23 @@ export function resolveKeys(
   return { url, anonKey, serviceRoleKey };
 }
 
-/** `npx supabase status -o json`, with a helpful error when the stack isn't running. */
+/** `npx supabase status -o json`, with an error that says why it failed. */
 export function supabaseStatus(): Record<string, string> {
-  try {
-    return JSON.parse(
-      execFileSync('npx', ['supabase', 'status', '-o', 'json'], {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }),
-    );
-  } catch {
-    throw new Error('Local Supabase is not running. Start it with `npx supabase start`.');
+  const result = npx(['supabase', 'status', '-o', 'json'], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let cause = failure(result);
+  if (result.status === 0) {
+    try {
+      return JSON.parse(result.stdout);
+    } catch (e) {
+      cause = `unreadable output: ${(e as Error).message}`;
+    }
   }
+  throw new Error(
+    `Couldn't read the local Supabase keys with \`npx supabase status\` (${cause}).\n` +
+      'If the stack is stopped, start it with `npx supabase start`. Or set E2E_SUPABASE_URL, ' +
+      'E2E_SUPABASE_ANON_KEY and E2E_SUPABASE_SERVICE_ROLE_KEY.',
+    { cause: result.error },
+  );
 }
 
 let cached: SupabaseKeys | undefined;

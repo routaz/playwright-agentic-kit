@@ -82,6 +82,43 @@ jobs:
             test-results/
           retention-days: 14
 
+  other-os:
+    name: Tests (${{ matrix.os }})
+    # The kit runs on developers' machines too, not just Linux CI. Windows starts npx,
+    # npm and claude through cmd.exe and checks out with its own paths, so it gets
+    # the full loop: unit tests, the suite, coverage and the mutation runner.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install chromium
+
+      - name: Typecheck, format and context
+        run: npm run typecheck && npm run format:check && npm run context:check
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: E2E tests
+        run: npm test
+
+      - name: Context coverage
+        run: npm run coverage -- --strict
+
+      - name: Break the app on purpose
+        run: npm run mutate
+
   mutations:
     name: Mutation check
     runs-on: ubuntu-latest

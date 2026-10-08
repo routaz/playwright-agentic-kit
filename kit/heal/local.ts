@@ -9,10 +9,11 @@
 //
 // Settings: heal.local.json (see heal.local.example.json). Flags: --dry-run skips GitHub calls.
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { requireClaude, runAgent } from '../claude.ts';
+import { npx } from '../run.ts';
 import { loadConfig } from './config.ts';
 import { reportIssues } from './github.ts';
 import { checkDiff } from './guard.ts';
@@ -24,7 +25,7 @@ const config = loadConfig();
 const step = (n: number, text: string) => console.log(`\n\x1b[1m${n}. ${text}\x1b[0m`);
 
 function runSuite(): boolean {
-  return spawnSync('npx', ['playwright', 'test'], { stdio: 'inherit' }).status === 0;
+  return npx(['playwright', 'test'], { stdio: 'inherit' }).status === 0;
 }
 
 requireClaude(config);
